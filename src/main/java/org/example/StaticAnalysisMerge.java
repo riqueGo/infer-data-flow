@@ -3,8 +3,8 @@ package org.example;
 import org.example.config.Arguments;
 import org.example.gitManager.CollectedMergeMethodData;
 import org.example.gitManager.CommitManager;
-import org.example.gitManager.MergeManager;
 import org.example.gitManager.ModifiedLinesManager;
+import org.example.infer.InferParser;
 import project.MergeCommit;
 import project.Project;
 
@@ -25,7 +25,12 @@ public class StaticAnalysisMerge {
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
         List<CollectedMergeMethodData> collectedMergeMethodDataList = modifiedLinesManager.collectData(project, mergeCommit);
-
+        InferParser inferParser = new InferParser(collectedMergeMethodDataList.get(0));
+        try {
+            inferParser.execute();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 }

@@ -85,7 +85,7 @@ public class ModifiedLinesManager {
             }
         }
 
-        CollectedMergeMethodData collectedMergeMethodData = new CollectedMergeMethodData(project, mergeCommit, className, filePath, mergeMethod.getSignature(), leftAddedLines, leftDeletedLines, rightAddedLines, rightDeletedLines);
+        CollectedMergeMethodData collectedMergeMethodData = new CollectedMergeMethodData(project, mergeCommit, className, project.getPath() + filePath, mergeMethod.getSignature(), leftAddedLines, leftDeletedLines, rightAddedLines, rightDeletedLines);
         System.out.println(collectedMergeMethodData.toString());
 
         return collectedMergeMethodData;
