@@ -2,25 +2,22 @@ package org.example.infer;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
-import org.example.gitManager.CollectedMergeMethodData;
+import org.example.gitManager.InferCollectedMergeData;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class InferVisitor extends ASTVisitor {
-    private CollectedMergeMethodData collectedMergeMethodData;
+    private InferCollectedMergeData inferCollectedMergeData;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
     private String className;
 
-    public InferVisitor(CollectedMergeMethodData collectedMergeMethodData, CompilationUnit compilationUnit) {
-        this.collectedMergeMethodData = collectedMergeMethodData;
+    public InferVisitor(InferCollectedMergeData inferCollectedMergeData, CompilationUnit compilationUnit) {
+        this.inferCollectedMergeData = inferCollectedMergeData;
         this.compilationUnit = compilationUnit;
 
         AST ast = compilationUnit.getAST();
@@ -54,11 +51,11 @@ public class InferVisitor extends ASTVisitor {
         int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
         String nodeType = node.getClass().getSimpleName();
 
-        if (collectedMergeMethodData.getLeftAddedLines().contains(nodeLine)) {
+        if (inferCollectedMergeData.getLeftAddedLines().contains(nodeLine)) {
             System.out.print("|" + nodeType + "|Left|" + nodeLine + "|" + node);
         }
 
-        if (collectedMergeMethodData.getRightAddedLines().contains(nodeLine)) {
+        if (inferCollectedMergeData.getRightAddedLines().contains(nodeLine)) {
             System.out.print("|" + nodeType + "|Right|" + nodeLine + "|" + node);
         }
     }
@@ -74,7 +71,7 @@ public class InferVisitor extends ASTVisitor {
             return;
         }
 
-        Path targetFilePath = Paths.get(targetPath, className + ".java").toAbsolutePath();
+        Path targetFilePath = Path.of(targetPath, className + ".java");
 
         try (FileWriter writer = new FileWriter(targetFilePath.toFile())) {
             writer.write(document.get());

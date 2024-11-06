@@ -38,8 +38,12 @@ public class CollectedMergeMethodData {
         this.rightDeletedLines = rightDeletedLines;
     }
 
-    public String getFilePath() {
-        return filePath;
+    public String getClassName() { return className; }
+
+    public String getFilePath() { return filePath; }
+
+    public Project getProject() {
+        return project;
     }
 
     public Set<Integer> getLeftAddedLines() {
@@ -49,8 +53,4 @@ public class CollectedMergeMethodData {
     public Set<Integer> getRightAddedLines() {
         return rightAddedLines;
     }
-
-    public String getProjectPath() {return project.getPath();}
-
-    public String getClassName() {return className;}
 }

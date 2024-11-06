@@ -3,13 +3,14 @@ package org.example;
 import org.example.config.Arguments;
 import org.example.gitManager.CollectedMergeMethodData;
 import org.example.gitManager.CommitManager;
+import org.example.gitManager.InferCollectedMergeData;
 import org.example.gitManager.ModifiedLinesManager;
 import org.example.infer.InferParser;
 import project.MergeCommit;
 import project.Project;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 public class StaticAnalysisMerge {
     private final Arguments args;
@@ -25,12 +26,39 @@ public class StaticAnalysisMerge {
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
         List<CollectedMergeMethodData> collectedMergeMethodDataList = modifiedLinesManager.collectData(project, mergeCommit);
-        InferParser inferParser = new InferParser(collectedMergeMethodDataList.get(0));
-        try {
-            inferParser.execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        List<InferCollectedMergeData> inferCollectedMergeDatas = getInferCollectedMergeData(collectedMergeMethodDataList);
 
+        for (InferCollectedMergeData collectedMergeData : inferCollectedMergeDatas) {
+            InferParser inferParser = new InferParser(collectedMergeData);
+            try {
+                inferParser.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private List<InferCollectedMergeData> getInferCollectedMergeData(List<CollectedMergeMethodData> collectedMergeMethodDataList) {
+        HashMap<String, InferCollectedMergeData> inferCollectedMergeDataByClass = new HashMap<>();
+
+        for (CollectedMergeMethodData collectedMergeMethodData : collectedMergeMethodDataList) {
+            String className = collectedMergeMethodData.getClassName();
+            InferCollectedMergeData inferCollectedMergeData;
+            if (!inferCollectedMergeDataByClass.containsKey(className)) {
+                inferCollectedMergeData = new InferCollectedMergeData(
+                        collectedMergeMethodData.getProject(),
+                        className,
+                        collectedMergeMethodData.getFilePath(),
+                        new HashSet<>(collectedMergeMethodData.getLeftAddedLines()),
+                        new HashSet<>(collectedMergeMethodData.getRightAddedLines())
+                );
+                inferCollectedMergeDataByClass.put(className, inferCollectedMergeData);
+            } else {
+                inferCollectedMergeData = inferCollectedMergeDataByClass.get(className);
+                inferCollectedMergeData.addLeftAddedLines(collectedMergeMethodData.getLeftAddedLines());
+                inferCollectedMergeData.addRightAddedLines(collectedMergeMethodData.getRightAddedLines());
+            }
+        }
+        return new ArrayList<>(inferCollectedMergeDataByClass.values());
     }
 }
