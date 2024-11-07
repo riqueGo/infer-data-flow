@@ -37,27 +37,46 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(ExpressionStatement node) {
-        printVisitor(node);
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        LambdaExpression lambdaExpression = ast.newLambdaExpression();
+        lambdaExpression.setBody((Expression) rewriter.createCopyTarget(node.getExpression()));
+
+        MethodInvocation methodInvocation = ast.newMethodInvocation();
+        methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+        methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
+        methodInvocation.arguments().add(lambdaExpression);
+
+        rewriter.replace(node, ast.newExpressionStatement(methodInvocation), null);
+
         return super.visit(node);
     }
 
     @Override
     public boolean visit(VariableDeclarationStatement node) {
-        printVisitor(node);
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        for (Object fragmentObj : node.fragments()) {
+            if (fragmentObj instanceof VariableDeclarationFragment fragment) {
+                Expression initializer = fragment.getInitializer();
+
+                if (initializer != null) {
+                    MethodInvocation methodInvocation = ast.newMethodInvocation();
+                    methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+                    methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
+                    methodInvocation.arguments().add(rewriter.createCopyTarget(initializer));
+
+                    rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, methodInvocation, null);
+                }
+            }
+        }
         return super.visit(node);
-    }
-
-    private void printVisitor(Statement node) {
-        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
-        String nodeType = node.getClass().getSimpleName();
-
-        if (inferCollectedMergeData.getLeftAddedLines().contains(nodeLine)) {
-            System.out.print("|" + nodeType + "|Left|" + nodeLine + "|" + node);
-        }
-
-        if (inferCollectedMergeData.getRightAddedLines().contains(nodeLine)) {
-            System.out.print("|" + nodeType + "|Right|" + nodeLine + "|" + node);
-        }
     }
 
     public void createInferClassFile(String source, String targetPath) {
@@ -79,5 +98,15 @@ public class InferVisitor extends ASTVisitor {
             System.err.println("Error writing to file " + targetFilePath + ": " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private String getNameMethodInferWrapperInvocation(Statement node) {
+        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
+        if (inferCollectedMergeData.getLeftAddedLines().contains(nodeLine)) {
+            return "left";
+        } else if (inferCollectedMergeData.getRightAddedLines().contains(nodeLine)) {
+            return "right";
+        }
+        return null;
     }
 }
