@@ -1,6 +1,5 @@
 package org.example.gitManager;
 
-import project.MergeCommit;
 import project.Project;
 
 import java.util.Set;

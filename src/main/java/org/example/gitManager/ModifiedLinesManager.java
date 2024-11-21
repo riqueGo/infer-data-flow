@@ -50,6 +50,41 @@ public class ModifiedLinesManager {
         return collectedMergeMethodDataList;
     }
 
+    public List<InferCollectedMergeData> collectLineData(Project project, MergeCommit mergeCommit) {
+        Map<String, Set<Integer>> leftAddedLinesByFilePath = new HashMap<>();
+        Map<String, Set<Integer>> rightAddedLinesByFilePath = new HashMap<>();
+        Set<String> filePaths = new HashSet<>();
+
+        for (String filePath : FileManager.getModifiedFiles(project, mergeCommit.getLeftSHA(), mergeCommit.getAncestorSHA(), "java")){
+            Set<Integer> leftAddedLines = new HashSet<>();
+            for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getLeftSHA(), mergeCommit.getSHA())) {
+                leftAddedLines.add(modifiedLine.getNumber());
+            }
+            leftAddedLinesByFilePath.put(filePath, leftAddedLines);
+            filePaths.add(filePath);
+        }
+
+        for (String filePath : FileManager.getModifiedFiles(project, mergeCommit.getRightSHA(), mergeCommit.getAncestorSHA(), "java")){
+            Set<Integer> rightAddedLines = new HashSet<>();
+            for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getRightSHA(), mergeCommit.getSHA())) {
+                rightAddedLines.add(modifiedLine.getNumber());
+            }
+            rightAddedLinesByFilePath.put(filePath, rightAddedLines);
+            filePaths.add(filePath);
+        }
+
+        List<InferCollectedMergeData> inferCollectedMergeDataList = new ArrayList<>();
+
+        for (String filePath : filePaths) {
+            Set<Integer> leftAddedLines = leftAddedLinesByFilePath.get(filePath);
+            Set<Integer> rightAddedLines = rightAddedLinesByFilePath.get(filePath);
+            String className = TypeNameHelper.getFullyQualifiedName(project, filePath, mergeCommit.getAncestorSHA());
+            inferCollectedMergeDataList.add(new InferCollectedMergeData(project, className, project.getPath() + filePath, leftAddedLines, rightAddedLines));
+        }
+
+        return inferCollectedMergeDataList;
+    }
+
     private CollectedMergeMethodData collectMethodData(
             Tuple2<ModifiedMethod, ModifiedMethod> leftAndRightMethods,
             ModifiedMethod mergeMethod,
