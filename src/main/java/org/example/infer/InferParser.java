@@ -26,6 +26,7 @@ public class InferParser {
         parser.setSource(source.toCharArray());
 
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setResolveBindings(true);
         CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
         InferVisitor inferVisitor = new InferVisitor(inferCollectedMergeData, cu);

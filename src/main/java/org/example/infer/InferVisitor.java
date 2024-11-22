@@ -36,21 +36,41 @@ public class InferVisitor extends ASTVisitor {
     }
 
     @Override
-    public boolean visit(ExpressionStatement node) {
+    public boolean visit(Assignment node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) {
+            return super.visit(node);
+        }
+
+        AST ast = node.getAST();
+
+        MethodInvocation methodInvocation = ast.newMethodInvocation();
+        methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+        methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
+
+        methodInvocation.arguments().add(ASTNode.copySubtree(ast, node.getRightHandSide()));
+
+        rewriter.set(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, methodInvocation, null);
+
+        return super.visit(node);
+    }
+
+    @Override
+    public boolean visit(MethodInvocation node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation == null) { return super.visit(node); }
 
         AST ast = node.getAST();
 
         LambdaExpression lambdaExpression = ast.newLambdaExpression();
-        lambdaExpression.setBody((Expression) rewriter.createCopyTarget(node.getExpression()));
+        lambdaExpression.setBody(ASTNode.copySubtree(ast, node));
 
         MethodInvocation methodInvocation = ast.newMethodInvocation();
         methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
         methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
         methodInvocation.arguments().add(lambdaExpression);
 
-        rewriter.replace(node, ast.newExpressionStatement(methodInvocation), null);
+        rewriter.replace(node.getParent(), ast.newExpressionStatement(methodInvocation), null);
 
         return super.visit(node);
     }
@@ -70,7 +90,7 @@ public class InferVisitor extends ASTVisitor {
                     MethodInvocation methodInvocation = ast.newMethodInvocation();
                     methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
                     methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
-                    methodInvocation.arguments().add(rewriter.createCopyTarget(initializer));
+                    methodInvocation.arguments().add(ASTNode.copySubtree(ast, initializer));
 
                     rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, methodInvocation, null);
                 }
@@ -100,7 +120,7 @@ public class InferVisitor extends ASTVisitor {
         }
     }
 
-    private String getNameMethodInferWrapperInvocation(Statement node) {
+    private String getNameMethodInferWrapperInvocation(ASTNode node) {
         int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
         if (inferCollectedMergeData.getLeftAddedLines().contains(nodeLine)) {
             return "left";
