@@ -14,7 +14,8 @@ public class InferVisitor extends ASTVisitor {
     private InferCollectedMergeData inferCollectedMergeData;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
-    private String className;
+    private final String packageName = "inferDependencies";
+    private final String wrapperClassName = "InferWrapper";
 
     public InferVisitor(InferCollectedMergeData inferCollectedMergeData, CompilationUnit compilationUnit) {
         this.inferCollectedMergeData = inferCollectedMergeData;
@@ -24,14 +25,14 @@ public class InferVisitor extends ASTVisitor {
         this.rewriter = ASTRewrite.create(ast);
 
         PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
-        newPackageDeclaration.setName(ast.newName("inferDependencies"));
+        newPackageDeclaration.setName(ast.newName(packageName));
 
         rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
     }
 
     @Override
     public boolean visit(TypeDeclaration node) {
-        className = node.getName().getIdentifier();
+        inferCollectedMergeData.addClassName(packageName + "." + node.getName().getIdentifier());
         return super.visit(node);
     }
 
@@ -45,7 +46,7 @@ public class InferVisitor extends ASTVisitor {
         AST ast = node.getAST();
 
         MethodInvocation methodInvocation = ast.newMethodInvocation();
-        methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+        methodInvocation.setExpression(ast.newSimpleName(wrapperClassName));
         methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
 
         methodInvocation.arguments().add(ASTNode.copySubtree(ast, node.getRightHandSide()));
@@ -66,7 +67,7 @@ public class InferVisitor extends ASTVisitor {
         lambdaExpression.setBody(ASTNode.copySubtree(ast, node));
 
         MethodInvocation methodInvocation = ast.newMethodInvocation();
-        methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+        methodInvocation.setExpression(ast.newSimpleName(wrapperClassName));
         methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
         methodInvocation.arguments().add(lambdaExpression);
 
@@ -88,7 +89,7 @@ public class InferVisitor extends ASTVisitor {
 
                 if (initializer != null) {
                     MethodInvocation methodInvocation = ast.newMethodInvocation();
-                    methodInvocation.setExpression(ast.newSimpleName("InferWrapper"));
+                    methodInvocation.setExpression(ast.newSimpleName(wrapperClassName));
                     methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
                     methodInvocation.arguments().add(ASTNode.copySubtree(ast, initializer));
 
@@ -110,7 +111,7 @@ public class InferVisitor extends ASTVisitor {
             return;
         }
 
-        Path targetFilePath = Path.of(targetPath, className + ".java");
+        Path targetFilePath = Path.of(targetPath, inferCollectedMergeData.getFileName());
 
         try (FileWriter writer = new FileWriter(targetFilePath.toFile())) {
             writer.write(document.get());

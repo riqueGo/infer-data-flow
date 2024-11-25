@@ -1,7 +1,6 @@
 package org.example;
 
 import org.example.config.Arguments;
-import org.example.gitManager.CollectedMergeMethodData;
 import org.example.gitManager.CommitManager;
 import org.example.gitManager.InferCollectedMergeData;
 import org.example.gitManager.ModifiedLinesManager;
@@ -25,8 +24,9 @@ public class StaticAnalysisMerge {
         ModifiedLinesManager modifiedLinesManager = new ModifiedLinesManager(args.getSsmDependenciesPath());
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
-        List<InferCollectedMergeData> inferCollectedMergeDatas = modifiedLinesManager.collectLineData(project, mergeCommit);
+        InferParser.createInferPackage(project.getPath());
 
+        List<InferCollectedMergeData> inferCollectedMergeDatas = modifiedLinesManager.collectLineData(project, mergeCommit);
         for (InferCollectedMergeData collectedMergeData : inferCollectedMergeDatas) {
             InferParser inferParser = new InferParser(collectedMergeData);
             try {
