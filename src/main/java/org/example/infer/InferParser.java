@@ -11,7 +11,8 @@ import java.nio.file.StandardCopyOption;
 
 public class InferParser {
     private InferCollectedMergeData inferCollectedMergeData;
-    public static final String inferDependenciesPath = "/src/main/java/inferDependencies";
+    public static final String sourceProjectPath = "/src/main/java"; //TODO: This should be passed as program argument
+    public static final String inferDependenciesPath = Path.of(sourceProjectPath, "inferDependencies").toString();
 
     public InferParser(InferCollectedMergeData inferCollectedMergeData) {
         this.inferCollectedMergeData = inferCollectedMergeData;
@@ -21,10 +22,17 @@ public class InferParser {
         String source = new String(Files.readAllBytes(Path.of(inferCollectedMergeData.getFilePath())));
 
         ASTParser parser = ASTParser.newParser(AST.JLS_Latest);
-        parser.setSource(source.toCharArray());
 
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setResolveBindings(true);
+        parser.setBindingsRecovery(true);
+
+        String[] sourcepath = {Path.of(inferCollectedMergeData.getProjectPath(), sourceProjectPath).toString()};
+
+        parser.setEnvironment(null, sourcepath, null, true);
+        parser.setSource(source.toCharArray());
+        parser.setUnitName(inferCollectedMergeData.getFileName());
+
         CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
         InferVisitor inferVisitor = new InferVisitor(inferCollectedMergeData, cu);
