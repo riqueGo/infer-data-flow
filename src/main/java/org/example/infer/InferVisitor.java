@@ -102,6 +102,43 @@ public class InferVisitor extends ASTVisitor {
         return super.visit(node);
     }
 
+    @Override
+    public boolean visit(ForStatement node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        for (Object initializerObj : node.initializers()) {
+            if (!(initializerObj instanceof VariableDeclarationExpression variableDeclaration)) { continue; }
+            for(Object fragmentObj : variableDeclaration.fragments()) {
+                if (!(fragmentObj instanceof VariableDeclarationFragment fragment)) {continue;}
+
+                Expression initializer = fragment.getInitializer();
+                if (initializer != null) {
+                    MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
+                    rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
+                }
+            }
+        }
+
+        Expression condition = node.getExpression();
+        if(condition != null) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
+            rewriter.set(node, ForStatement.EXPRESSION_PROPERTY, inferWrapper, null);
+        }
+
+        ListRewrite updateRewrite = rewriter.getListRewrite(node, ForStatement.UPDATERS_PROPERTY);
+        for(Object updaterObj : node.updaters()) {
+            if(updaterObj instanceof Expression updater) {
+                MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, updater);
+                updateRewrite.replace(updater, inferWrapper, null);
+            }
+        }
+
+        return super.visit(node);
+    }
+
     public void createInferClassFile(String source, String targetPath) {
         Document document = new Document(source);
         TextEdit edits = rewriter.rewriteAST(document, null);
