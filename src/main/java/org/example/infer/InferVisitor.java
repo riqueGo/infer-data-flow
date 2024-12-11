@@ -13,12 +13,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.example.infer.InferUtils.packageName;
+import static org.example.infer.InferUtils.wrapperClassName;
+
 public class InferVisitor extends ASTVisitor {
     private InferCollectedMergeData inferCollectedMergeData;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
-    private final String packageName = "inferDependencies";
-    private final String wrapperClassName = "InferWrapper";
+
 
     public InferVisitor(InferCollectedMergeData inferCollectedMergeData, CompilationUnit compilationUnit) {
         this.inferCollectedMergeData = inferCollectedMergeData;
@@ -42,9 +44,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(Assignment node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) {
-            return super.visit(node);
-        }
+        if (nameMethodInvocation == null) { return super.visit(node); }
 
         MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node.getRightHandSide());
         rewriter.set(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
@@ -112,7 +112,7 @@ public class InferVisitor extends ASTVisitor {
         for (Object initializerObj : node.initializers()) {
             if (!(initializerObj instanceof VariableDeclarationExpression variableDeclaration)) { continue; }
             for(Object fragmentObj : variableDeclaration.fragments()) {
-                if (!(fragmentObj instanceof VariableDeclarationFragment fragment)) {continue;}
+                if (!(fragmentObj instanceof VariableDeclarationFragment fragment)) { continue; }
 
                 Expression initializer = fragment.getInitializer();
                 if (initializer != null) {
@@ -135,6 +135,32 @@ public class InferVisitor extends ASTVisitor {
                 updateRewrite.replace(updater, inferWrapper, null);
             }
         }
+
+        return super.visit(node);
+    }
+
+    @Override
+    public boolean visit(PrefixExpression node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+        rewriter.replace(node.getParent(), ast.newExpressionStatement(inferWrapper), null);
+
+        return super.visit(node);
+    }
+
+    @Override
+    public boolean visit(PostfixExpression node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+        rewriter.replace(node.getParent(), ast.newExpressionStatement(inferWrapper), null);
 
         return super.visit(node);
     }
