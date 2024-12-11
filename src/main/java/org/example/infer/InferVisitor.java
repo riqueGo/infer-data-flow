@@ -144,11 +144,12 @@ public class InferVisitor extends ASTVisitor {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation == null) { return super.visit(node); }
 
-        AST ast = node.getAST();
+        if(node.getParent() instanceof ExpressionStatement expressionStatement) {
+            AST ast = node.getAST();
 
-        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-        rewriter.replace(node.getParent(), ast.newExpressionStatement(inferWrapper), null);
-
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
+        }
         return super.visit(node);
     }
 
@@ -157,11 +158,12 @@ public class InferVisitor extends ASTVisitor {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation == null) { return super.visit(node); }
 
-        AST ast = node.getAST();
+        if(node.getParent() instanceof ExpressionStatement expressionStatement) {
+            AST ast = node.getAST();
 
-        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-        rewriter.replace(node.getParent(), ast.newExpressionStatement(inferWrapper), null);
-
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
+        }
         return super.visit(node);
     }
 
