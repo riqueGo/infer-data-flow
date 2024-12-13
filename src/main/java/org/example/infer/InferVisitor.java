@@ -1,5 +1,6 @@
 package org.example.infer;
 
+import org.codehaus.groovy.ast.expr.BooleanExpression;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -122,10 +123,9 @@ public class InferVisitor extends ASTVisitor {
             }
         }
 
-        Expression condition = node.getExpression();
-        if(condition != null) {
+        if(node.getExpression() instanceof SimpleName condition) {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
-            rewriter.set(node, ForStatement.EXPRESSION_PROPERTY, inferWrapper, null);
+            rewriter.replace(condition, inferWrapper, null);
         }
 
         ListRewrite updateRewrite = rewriter.getListRewrite(node, ForStatement.UPDATERS_PROPERTY);
@@ -164,6 +164,33 @@ public class InferVisitor extends ASTVisitor {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
             rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
         }
+        return super.visit(node);
+    }
+
+    @Override
+    public boolean visit(InfixExpression node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation == null) { return super.visit(node); }
+
+        AST ast = node.getAST();
+
+        if (node.getLeftOperand() instanceof SimpleName leftOperand) {
+            MethodInvocation wrappedLeftOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, leftOperand);
+            rewriter.replace(leftOperand, wrappedLeftOperand, null);
+        }
+
+        if (node.getRightOperand() instanceof SimpleName rightOperand) {
+            MethodInvocation wrappedRightOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, rightOperand);
+            rewriter.replace(rightOperand, wrappedRightOperand, null);
+        }
+
+        for (Object extendedOperandObj : node.extendedOperands()) {
+            if (extendedOperandObj instanceof SimpleName extendedOperand) {
+                MethodInvocation wrappedExtendedOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, extendedOperand);
+                rewriter.replace((ASTNode) extendedOperandObj, wrappedExtendedOperand, null);
+            }
+        }
+
         return super.visit(node);
     }
 
