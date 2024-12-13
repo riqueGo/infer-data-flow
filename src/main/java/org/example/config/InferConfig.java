@@ -41,9 +41,7 @@ public class InferConfig {
     }
 
 
-    public void execInfer() {
-        //TODO: Avoid Hardcode
-        String command = "infer --pulse-only --pulse-taint-config /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/inferConfig.json -- /home/rique/Documents/research/infer-data-flow-test/gradlew clean build";
+    public void execInfer(String command) {
 
         ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
         processBuilder.directory(new File("/home/rique/Documents/research/infer-data-flow-test"));

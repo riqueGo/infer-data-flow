@@ -56,9 +56,11 @@ public class StaticAnalysisMerge {
             e.printStackTrace();
         }
 
-        inferConfig.execInfer();
-
+        //TODO: Avoid Hardcode
+        System.out.println("Infer Executing left -> right...");
+        inferConfig.execInfer("infer --pulse-only --pulse-taint-config /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/inferConfig.json -o /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/infer-out-left-to-right -- /home/rique/Documents/research/infer-data-flow-test/gradlew clean build");
         inferConfig.swap();
+
         json = gson.toJson(inferConfig);
 
         try (FileWriter writer = new FileWriter(Path.of(project.getPath(), inferDependenciesPath, "inferConfig.json").toString())) {
@@ -67,6 +69,8 @@ public class StaticAnalysisMerge {
             e.printStackTrace();
         }
 
-        inferConfig.execInfer();
+        //TODO: Avoid Hardcode
+        System.out.println("Infer Executing right -> left...");
+        inferConfig.execInfer("infer --pulse-only --pulse-taint-config /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/inferConfig.json -o /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/infer-out-right-to-left -- /home/rique/Documents/research/infer-data-flow-test/gradlew clean build");
     }
 }
