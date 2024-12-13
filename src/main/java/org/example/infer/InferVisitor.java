@@ -47,8 +47,38 @@ public class InferVisitor extends ASTVisitor {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation == null) { return super.visit(node); }
 
-        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node.getRightHandSide());
-        rewriter.set(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
+        AST ast = node.getAST();
+
+        Assignment.Operator operator = node.getOperator();
+        if(operator == Assignment.Operator.ASSIGN) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, node.getRightHandSide());
+            rewriter.set(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
+        } else {
+            // Create the new right-hand side
+            InfixExpression infixExpression = ast.newInfixExpression();
+            infixExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, node.getLeftHandSide()));
+            infixExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, node.getRightHandSide()));
+
+            switch (operator.toString()) {
+                case "+=" -> infixExpression.setOperator(InfixExpression.Operator.PLUS);
+                case "-=" -> infixExpression.setOperator(InfixExpression.Operator.MINUS);
+                case "*=" -> infixExpression.setOperator(InfixExpression.Operator.TIMES);
+                case "/=" -> infixExpression.setOperator(InfixExpression.Operator.DIVIDE);
+                case "%=" -> infixExpression.setOperator(InfixExpression.Operator.REMAINDER);
+                default -> { return super.visit(node); }
+            }
+
+            // Wrap the new right-hand side in InferWrapper
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, infixExpression);
+
+            // Replace the original assignment with a standard assignment using the wrapped RHS
+            Assignment newAssignment = ast.newAssignment();
+            newAssignment.setLeftHandSide((Expression) ASTNode.copySubtree(ast, node.getLeftHandSide()));
+            newAssignment.setRightHandSide(inferWrapper);
+            newAssignment.setOperator(Assignment.Operator.ASSIGN);
+
+            rewriter.replace(node, newAssignment, null);
+        }
 
         return super.visit(node);
     }
