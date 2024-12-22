@@ -1,4 +1,4 @@
-package org.example.config;
+package infer;
 
 import com.google.gson.annotations.SerializedName;
 

@@ -1,4 +1,4 @@
-package inferDependencies;
+package infer;
 
 public class InferWrapper {
     public static <T> T left(T value) {return value;}

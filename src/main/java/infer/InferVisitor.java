@@ -1,51 +1,41 @@
-package org.example.infer;
+package infer;
 
-import org.codehaus.groovy.ast.expr.BooleanExpression;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.eclipse.jface.text.Document;
-import org.eclipse.text.edits.TextEdit;
-import org.example.gitManager.InferCollectedMergeData;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
+import org.example.gitManager.CollectedMergeDataByFile;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.example.infer.InferUtils.packageName;
-import static org.example.infer.InferUtils.wrapperClassName;
+import static infer.InferUtils.INFER_PACKAGE_NAME;
+import static infer.InferUtils.WRAPPER_CLASS_NAME;
 
 public class InferVisitor extends ASTVisitor {
-    private InferCollectedMergeData inferCollectedMergeData;
+    private CollectedMergeDataByFile collectedMergeDataByFile;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
 
 
-    public InferVisitor(InferCollectedMergeData inferCollectedMergeData, CompilationUnit compilationUnit) {
-        this.inferCollectedMergeData = inferCollectedMergeData;
+    public InferVisitor(
+            CollectedMergeDataByFile collectedMergeDataByFile,
+            CompilationUnit compilationUnit,
+            ASTRewrite rewriter
+    ) {
+        this.collectedMergeDataByFile = collectedMergeDataByFile;
         this.compilationUnit = compilationUnit;
-
-        AST ast = compilationUnit.getAST();
-        this.rewriter = ASTRewrite.create(ast);
-
-        PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
-        newPackageDeclaration.setName(ast.newName(packageName));
-
-        rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
+        this.rewriter = rewriter;
     }
 
     @Override
     public boolean visit(TypeDeclaration node) {
-        inferCollectedMergeData.addClassName(packageName + "." + node.getName().getIdentifier());
+        collectedMergeDataByFile.addClassName(INFER_PACKAGE_NAME + "." + node.getName().getIdentifier());
         return super.visit(node);
     }
 
     @Override
     public boolean visit(Assignment node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
 
@@ -86,7 +76,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(MethodInvocation node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         IMethodBinding methodBinding = node.resolveMethodBinding();
         if (methodBinding == null) { return super.visit(node); }
@@ -118,7 +108,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(VariableDeclarationStatement node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         for (Object fragmentObj : node.fragments()) {
             if (fragmentObj instanceof VariableDeclarationFragment fragment) {
@@ -136,7 +126,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(ForStatement node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
 
@@ -172,7 +162,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(PrefixExpression node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         if(node.getParent() instanceof ExpressionStatement expressionStatement) {
             AST ast = node.getAST();
@@ -186,7 +176,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(PostfixExpression node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         if(node.getParent() instanceof ExpressionStatement expressionStatement) {
             AST ast = node.getAST();
@@ -200,7 +190,7 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(InfixExpression node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation == null) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
 
@@ -224,40 +214,14 @@ public class InferVisitor extends ASTVisitor {
         return super.visit(node);
     }
 
-    public void createInferClassFile(String source, String targetPath) {
-        Document document = new Document(source);
-        TextEdit edits = rewriter.rewriteAST(document, null);
-        try {
-            edits.apply(document);
-        } catch (Exception e) {
-            System.err.println("Error applying edits: " + e.getMessage());
-            e.printStackTrace();
-            return;
-        }
-
-        Path targetFilePath = Path.of(targetPath, inferCollectedMergeData.getFileName());
-
-        try (FileWriter writer = new FileWriter(targetFilePath.toFile())) {
-            writer.write(document.get());
-        } catch (IOException e) {
-            System.err.println("Error writing to file " + targetFilePath + ": " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
     private String getNameMethodInferWrapperInvocation(ASTNode node) {
         int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
-        if (inferCollectedMergeData.getLeftAddedLines().contains(nodeLine)) {
-            return "left";
-        } else if (inferCollectedMergeData.getRightAddedLines().contains(nodeLine)) {
-            return "right";
-        }
-        return null;
+        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
     }
 
     private MethodInvocation wrapInferMethodInvocation(AST ast, String nameMethodInvocation, Expression expression) {
         MethodInvocation methodInvocation = ast.newMethodInvocation();
-        methodInvocation.setExpression(ast.newSimpleName(wrapperClassName));
+        methodInvocation.setExpression(ast.newSimpleName(WRAPPER_CLASS_NAME));
         methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
         methodInvocation.arguments().add(ASTNode.copySubtree(ast, expression));
         return methodInvocation;

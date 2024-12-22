@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class InferCollectedMergeData {
+public class CollectedMergeDataByFile {
     private Project project;
     private String filePath;
     private List<String> classNames;
     private Set<Integer> leftAddedLines;
     private Set<Integer> rightAddedLines;
 
-    public InferCollectedMergeData(Project project, String filePath, Set<Integer> leftAddedLines, Set<Integer> rightAddedLines) {
+    public CollectedMergeDataByFile(Project project, String filePath, Set<Integer> leftAddedLines, Set<Integer> rightAddedLines) {
         this.project = project;
         this.filePath = filePath;
         this.leftAddedLines = leftAddedLines;
@@ -26,25 +26,18 @@ public class InferCollectedMergeData {
         return filePath;
     }
 
-    public Set<Integer> getLeftAddedLines() {
-        return leftAddedLines;
-    }
-
-    public Set<Integer> getRightAddedLines() {
-        return rightAddedLines;
+    public String getWhoChangedTheLine(int lineNumber) {
+        if(leftAddedLines.contains(lineNumber)) {
+            return  "left";
+        } else if(rightAddedLines.contains(lineNumber)) {
+            return  "right";
+        }
+        return "";
     }
 
     public String getProjectPath() {return project.getPath();}
 
     public String getFileName() {return  Path.of(filePath).getFileName().toString(); }
-
-    public void addLeftAddedLines(Set<Integer> newLeftAddedLines) {
-        leftAddedLines.addAll(newLeftAddedLines);
-    }
-
-    public void addRightAddedLines(Set<Integer> newRightAddedLines) {
-        rightAddedLines.addAll(newRightAddedLines);
-    }
 
     public void addClassName(String className) {
         classNames.add(className);

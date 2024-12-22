@@ -1,22 +1,16 @@
 package org.example;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import infer.InferAnalysis;
+import infer.InferConfig;
 import org.example.config.Arguments;
-import org.example.config.InferConfig;
 import org.example.gitManager.CommitManager;
-import org.example.gitManager.InferCollectedMergeData;
+import org.example.gitManager.CollectedMergeDataByFile;
 import org.example.gitManager.ModifiedLinesManager;
-import org.example.infer.InferParser;
+import infer.InferGenerate;
 import project.MergeCommit;
 import project.Project;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
-
-import static org.example.infer.InferParser.inferDependenciesPath;
 
 public class StaticAnalysisMerge {
     private final Arguments args;
@@ -31,46 +25,12 @@ public class StaticAnalysisMerge {
         ModifiedLinesManager modifiedLinesManager = new ModifiedLinesManager(args.getSsmDependenciesPath());
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
-        InferParser.createInferPackage(project.getPath());
-
-        List<InferCollectedMergeData> inferCollectedMergeDatas = modifiedLinesManager.collectLineData(project, mergeCommit);
+        List<CollectedMergeDataByFile> collectedMergeDataByFiles = modifiedLinesManager.collectLineDataByFile(project, mergeCommit);
+        InferGenerate inferGenerate = new InferGenerate(collectedMergeDataByFiles);
+        inferGenerate.generateInferCode(project.getPath());
 
         InferConfig inferConfig = new InferConfig();
-
-        for (InferCollectedMergeData collectedMergeData : inferCollectedMergeDatas) {
-            InferParser inferParser = new InferParser(collectedMergeData);
-            try {
-                inferParser.execute();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        //TODO:Fix the second output report is overriding the first one
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String json = gson.toJson(inferConfig);
-
-        try (FileWriter writer = new FileWriter(Path.of(project.getPath(), inferDependenciesPath, "inferConfig.json").toString())) {
-            writer.write(json);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //TODO: Avoid Hardcode
-        System.out.println("Infer Executing left -> right...");
-        inferConfig.execInfer("infer --pulse-only --pulse-taint-config /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/inferConfig.json -o /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/infer-out-left-to-right -- /home/rique/Documents/research/infer-data-flow-test/gradlew clean build");
-        inferConfig.swap();
-
-        json = gson.toJson(inferConfig);
-
-        try (FileWriter writer = new FileWriter(Path.of(project.getPath(), inferDependenciesPath, "inferConfig.json").toString())) {
-            writer.write(json);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        //TODO: Avoid Hardcode
-        System.out.println("Infer Executing right -> left...");
-        inferConfig.execInfer("infer --pulse-only --pulse-taint-config /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/inferConfig.json -o /home/rique/Documents/research/infer-data-flow-test/src/main/java/inferDependencies/infer-out-right-to-left -- /home/rique/Documents/research/infer-data-flow-test/gradlew clean build");
+        InferAnalysis inferAnalysis = new InferAnalysis(inferConfig);
+        inferAnalysis.executeDataFlowAnalysis(project.getPath());
     }
 }

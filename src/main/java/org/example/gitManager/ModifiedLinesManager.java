@@ -50,7 +50,7 @@ public class ModifiedLinesManager {
         return collectedMergeMethodDataList;
     }
 
-    public List<InferCollectedMergeData> collectLineData(Project project, MergeCommit mergeCommit) {
+    public List<CollectedMergeDataByFile> collectLineDataByFile(Project project, MergeCommit mergeCommit) {
         Map<String, Set<Integer>> leftAddedLinesByFilePath = new HashMap<>();
         Map<String, Set<Integer>> rightAddedLinesByFilePath = new HashMap<>();
         Set<String> filePaths = new HashSet<>();
@@ -72,14 +72,14 @@ public class ModifiedLinesManager {
             filePaths.add(filePath);
         }
 
-        List<InferCollectedMergeData> inferCollectedMergeDataList = new ArrayList<>();
+        List<CollectedMergeDataByFile> collectedMergeDataByFiles = new ArrayList<>();
 
         for (String filePath : filePaths) {
             Set<Integer> leftAddedLines = leftAddedLinesByFilePath.get(filePath);
             Set<Integer> rightAddedLines = rightAddedLinesByFilePath.get(filePath);
-            inferCollectedMergeDataList.add(new InferCollectedMergeData(project, project.getPath() + filePath, leftAddedLines, rightAddedLines));
+            collectedMergeDataByFiles.add(new CollectedMergeDataByFile(project, project.getPath() + filePath, leftAddedLines, rightAddedLines));
         }
-        return inferCollectedMergeDataList;
+        return collectedMergeDataByFiles;
     }
 
     private CollectedMergeMethodData collectMethodData(
