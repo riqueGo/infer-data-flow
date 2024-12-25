@@ -214,6 +214,18 @@ public class InferVisitor extends ASTVisitor {
         return super.visit(node);
     }
 
+    @Override
+    public boolean visit(ClassInstanceCreation node) {
+        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
+
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+        rewriter.replace(node, inferWrapper, null);
+
+        return super.visit(node);
+    }
+
+
     private String getNameMethodInferWrapperInvocation(ASTNode node) {
         int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
         return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);

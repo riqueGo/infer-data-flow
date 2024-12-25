@@ -26,6 +26,10 @@ public class CollectedMergeDataByFile {
         return filePath;
     }
 
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
     public String getWhoChangedTheLine(int lineNumber) {
         if(leftAddedLines.contains(lineNumber)) {
             return  "left";

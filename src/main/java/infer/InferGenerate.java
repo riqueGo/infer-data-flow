@@ -1,8 +1,6 @@
 package infer;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.PackageDeclaration;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
@@ -40,7 +38,7 @@ public class InferGenerate {
                 AST ast = compilationUnit.getAST();
                 rewriter = ASTRewrite.create(ast);
 
-                rewriteCUToInferPackage(ast);
+                changeProgramToInferPackage(ast);
 
                 InferVisitor inferVisitor = new InferVisitor(collectedMergeData, compilationUnit, rewriter);
                 compilationUnit.accept(inferVisitor);
@@ -93,9 +91,21 @@ public class InferGenerate {
         }
     }
 
-    private void rewriteCUToInferPackage(AST ast) {
+    private void changeProgramToInferPackage(AST ast) {
+        PackageDeclaration oldPackage = compilationUnit.getPackage();
+        String oldPackageName = oldPackage.getName().getFullyQualifiedName();
+
         PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
         newPackageDeclaration.setName(ast.newName(INFER_PACKAGE_NAME));
         rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
+
+        // Add an import statement for the old package
+        if (!oldPackageName.equals(INFER_PACKAGE_NAME)) {
+            ImportDeclaration importDeclaration = ast.newImportDeclaration();
+            importDeclaration.setName(ast.newName(oldPackageName));
+            importDeclaration.setOnDemand(true);
+
+            rewriter.getListRewrite(compilationUnit, CompilationUnit.IMPORTS_PROPERTY).insertLast(importDeclaration, null);
+        }
     }
 }
