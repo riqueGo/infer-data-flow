@@ -9,4 +9,5 @@ public class InferUtils {
     public static final String INFER_PACKAGE_PATH = Path.of(SOURCE_PROJECT_PATH, INFER_PACKAGE_NAME).toString();
     public static final String INFER_CONFIG_NAME = "inferconfig.json";
     public static final String INFER_OUT = "infer-out";
+    public static final String REWRITTEN_PROPERTY = "rewritten";
 }
