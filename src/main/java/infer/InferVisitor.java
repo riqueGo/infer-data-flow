@@ -32,20 +32,18 @@ public class InferVisitor extends ASTVisitor {
     }
 
     @Override
-    public boolean visit(VariableDeclarationStatement node) {
+    public boolean visit(VariableDeclarationFragment node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
-
-        for (Object fragmentObj : node.fragments()) {
-            if (fragmentObj instanceof VariableDeclarationFragment fragment) {
-                Expression initializer = fragment.getInitializer();
-
-                if (initializer != null && !(initializer instanceof ClassInstanceCreation)) {
-                    MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
-                    rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
-                }
-            }
+        if (nameMethodInvocation.isBlank()) {
+            return super.visit(node);
         }
+
+        Expression initializer = node.getInitializer();
+        if (initializer != null && !(initializer instanceof ClassInstanceCreation || initializer instanceof MethodInvocation)) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
+            rewriter.set(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
+        }
+
         return super.visit(node);
     }
 
@@ -188,7 +186,7 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
-        wrapArguments(node, nameMethodInvocation, ClassInstanceCreation.ARGUMENTS_PROPERTY);
+        wrapArguments(node, nameMethodInvocation, node.arguments());
 
         return false;
     }
@@ -201,8 +199,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         // Wrap nested MethodInvocation arguments first
-        wrapArguments(node, nameMethodInvocation, MethodInvocation.ARGUMENTS_PROPERTY);
-
+        wrapArguments(node, nameMethodInvocation, node.arguments());
         // Replace rewritten arguments if necessary
         updateArguments(node.arguments());
 
@@ -229,8 +226,9 @@ public class InferVisitor extends ASTVisitor {
     }
 
     private String getNameMethodInferWrapperInvocation(ASTNode node) {
-        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
-        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
+//        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
+//        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
+        return "left";
     }
 
     private MethodInvocation wrapInferMethodInvocation(AST ast, String nameMethodInvocation, Expression expression) {
@@ -241,18 +239,18 @@ public class InferVisitor extends ASTVisitor {
         return methodInvocation;
     }
 
-    private void wrapArguments(Expression node, String nameMethodInvocation, StructuralPropertyDescriptor propertyDescriptor) {
-        for (Object argObj : (List<?>) node.getStructuralProperty(propertyDescriptor)) {
-            if (!(argObj instanceof Expression argument)) {
+    private void wrapArguments(Expression node, String nameMethodInvocation, List<Expression> arguments) {
+        for (Expression argument : arguments) {
+            if (argument instanceof ClassInstanceCreation nestedInstanceCreation) { // Recursive wrapping for nested ClassInstanceCreation
+                wrapArguments(nestedInstanceCreation, nameMethodInvocation, nestedInstanceCreation.arguments());
+                updateArguments(nestedInstanceCreation.arguments());
                 continue;
-            }
-
-            // Recursive wrapping for nested MethodInvocation
-            if (argument instanceof MethodInvocation nestedInvocation) {
-                wrapArguments(nestedInvocation, nameMethodInvocation, MethodInvocation.ARGUMENTS_PROPERTY);
+            } else if (argument instanceof MethodInvocation nestedInvocation) { // Recursive wrapping for nested MethodInvocation
+                wrapArguments(nestedInvocation, nameMethodInvocation, nestedInvocation.arguments());
                 updateArguments(nestedInvocation.arguments());
             }
 
+            //Wrap the argument
             MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
             rewriter.replace(argument, wrappedArgument, null);
             argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
