@@ -186,8 +186,7 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
-        wrapArguments(node, nameMethodInvocation, node.arguments());
-
+        wrapClassIntanceCreation(node, nameMethodInvocation);
         return false;
     }
 
@@ -198,37 +197,13 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
-        // Wrap nested MethodInvocation arguments first
-        wrapArguments(node, nameMethodInvocation, node.arguments());
-        // Replace rewritten arguments if necessary
-        updateArguments(node.arguments());
-
-        AST ast = node.getAST();
-
-        IMethodBinding methodBinding = node.resolveMethodBinding();
-        if (methodBinding == null) {
-            return false;
-        }
-
-        // Wrap the MethodInvocation itself if it's not void
-        boolean isVoid = methodBinding.getReturnType().isPrimitive() && "void".equals(methodBinding.getReturnType().getName());
-        if (!isVoid) {
-            MethodInvocation wrappedMethod = wrapInferMethodInvocation(ast, nameMethodInvocation, node);
-
-            if (node.getParent() instanceof ExpressionStatement expressionStatement) {
-                rewriter.replace(expressionStatement, ast.newExpressionStatement(wrappedMethod), null);
-            } else {
-                rewriter.replace(node, wrappedMethod, null);
-            }
-        }
-
+        wrapMethodInvocation(node, nameMethodInvocation);
         return false;
     }
 
     private String getNameMethodInferWrapperInvocation(ASTNode node) {
-//        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
-//        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
-        return "left";
+        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
+        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
     }
 
     private MethodInvocation wrapInferMethodInvocation(AST ast, String nameMethodInvocation, Expression expression) {
@@ -242,18 +217,14 @@ public class InferVisitor extends ASTVisitor {
     private void wrapArguments(Expression node, String nameMethodInvocation, List<Expression> arguments) {
         for (Expression argument : arguments) {
             if (argument instanceof ClassInstanceCreation nestedInstanceCreation) { // Recursive wrapping for nested ClassInstanceCreation
-                wrapArguments(nestedInstanceCreation, nameMethodInvocation, nestedInstanceCreation.arguments());
-                updateArguments(nestedInstanceCreation.arguments());
-                continue;
+                wrapClassIntanceCreation(nestedInstanceCreation, nameMethodInvocation);
             } else if (argument instanceof MethodInvocation nestedInvocation) { // Recursive wrapping for nested MethodInvocation
-                wrapArguments(nestedInvocation, nameMethodInvocation, nestedInvocation.arguments());
-                updateArguments(nestedInvocation.arguments());
+                wrapMethodInvocation(nestedInvocation, nameMethodInvocation);
+            } else {
+                MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
+                rewriter.replace(argument, wrappedArgument, null);
+                argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
             }
-
-            //Wrap the argument
-            MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
-            rewriter.replace(argument, wrappedArgument, null);
-            argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
         }
     }
 
@@ -264,6 +235,39 @@ public class InferVisitor extends ASTVisitor {
             if (argumentUpdated != null) {
                 arguments.set(i, argumentUpdated);
             }
+        }
+    }
+
+    private void wrapMethodInvocation(MethodInvocation node, String nameMethodInvocation) {
+        wrapArguments(node, nameMethodInvocation, node.arguments());
+        updateArguments(node.arguments());
+
+        IMethodBinding methodBinding = node.resolveMethodBinding();
+        if (methodBinding == null) {return;}
+
+        // Wrap the MethodInvocation itself if it's not void
+        boolean isVoid = methodBinding.getReturnType().isPrimitive() && "void".equals(methodBinding.getReturnType().getName());
+        if (!isVoid) {
+            AST ast = node.getAST();
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, node);
+
+            if (node.getParent() instanceof ExpressionStatement expressionStatement) {
+                rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
+            } else {
+                rewriter.replace(node, inferWrapper, null);
+                node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
+            }
+        }
+    }
+
+    private void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
+        if(node.arguments().isEmpty()) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            rewriter.replace(node, inferWrapper, null);
+            node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
+        } else {
+            wrapArguments(node, nameMethodInvocation, node.arguments());
+            updateArguments(node.arguments());
         }
     }
 }
