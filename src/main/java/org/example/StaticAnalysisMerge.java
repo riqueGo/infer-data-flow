@@ -1,7 +1,6 @@
 package org.example;
 
 import infer.InferAnalysis;
-import infer.InferConfig;
 import org.example.config.Arguments;
 import org.example.gitManager.CommitManager;
 import org.example.gitManager.CollectedMergeDataByFile;
@@ -29,8 +28,7 @@ public class StaticAnalysisMerge {
         InferGenerate inferGenerate = new InferGenerate(collectedMergeDataByFiles);
         inferGenerate.generateInferCode(project.getPath());
 
-        InferConfig inferConfig = new InferConfig();
-        InferAnalysis inferAnalysis = new InferAnalysis(inferConfig);
+        InferAnalysis inferAnalysis = new InferAnalysis();
         inferAnalysis.executeDataFlowAnalysis(project.getPath());
     }
 }

@@ -51,7 +51,7 @@ public class InferGenerate {
     }
 
     private void createInferPackage(String targetPath) {
-        Path sourceDirPath = Path.of(".", INFER_PACKAGE_PATH);
+        Path sourceDirPath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
         Path targetDirPath = Path.of(targetPath, INFER_PACKAGE_PATH);
         Path wrapperFilePath = sourceDirPath.resolve(WRAPPER_CLASS_NAME + ".java");
 

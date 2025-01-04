@@ -1,0 +1,14 @@
+{
+  "pulse-taint-sources": [
+    {
+      "class_names": ["infer.InferWrapper"],
+      "method_names": ["right"]
+    }
+  ],
+  "pulse-taint-sinks": [
+    {
+      "class_names": ["infer.InferWrapper"],
+      "method_names": ["left"]
+    }
+  ]
+}

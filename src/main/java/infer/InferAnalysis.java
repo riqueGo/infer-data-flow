@@ -1,8 +1,5 @@
 package infer;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,19 +8,11 @@ import java.nio.file.StandardCopyOption;
 import static infer.InferUtils.*;
 
 public class InferAnalysis {
-    private InferConfig inferConfig;
-
-    public InferAnalysis(InferConfig inferConfig) {
-        this.inferConfig = inferConfig;
-    }
 
     public void executeDataFlowAnalysis(String projectPath) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String json = gson.toJson(inferConfig);
-
-        Path inferPackagePath = Path.of(projectPath, INFER_PACKAGE_PATH);
-        String inferConfigUri = inferPackagePath.resolve(INFER_CONFIG_NAME).toString();
-        String inferOutUri = inferPackagePath.resolve(INFER_OUT).toString();
+        Path inferDestinationPackagePath = Path.of(projectPath, INFER_PACKAGE_PATH);
+        Path inferSourcePackagePath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
+        String inferOutUri = inferDestinationPackagePath.resolve(INFER_OUT).toString();
         String gradlewPath = Path.of(projectPath, "gradlew").toString();
 
         String buildCommand;
@@ -35,37 +24,24 @@ public class InferAnalysis {
             throw new IllegalStateException("Unsupported project type. Neither Gradle nor Maven build files were found.");
         }
 
-        try (FileWriter writer = new FileWriter(inferConfigUri)) {
-            writer.write(json);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         String captureCommand = String.format("infer capture -o %s -- %s", inferOutUri, buildCommand);
-        String analyzeCommand = String.format("infer analyze --pulse-only --pulse-taint-config %s -o %s", inferConfigUri, inferOutUri);
+        String analyzeCommand = String.format("infer analyze --pulse-only -o %s", inferOutUri);
+        String rightToLeftAnalysis = String.format("%s --inferconfig-path %s", analyzeCommand, inferSourcePackagePath.resolve(INFER_CONFIG_RIGHT_TO_LEFT));
+        String leftToRightAnalysis = String.format("%s --inferconfig-path %s", analyzeCommand, inferSourcePackagePath.resolve(INFER_CONFIG_LEFT_TO_RIGHT));
 
         System.out.println(captureCommand);
         System.out.println("Capture Infer Phase...");
         execInfer(captureCommand, projectPath);
 
         System.out.println("Infer Executing left -> right");
-        System.out.println(analyzeCommand);
-        execInfer(analyzeCommand, projectPath);
+        System.out.println(leftToRightAnalysis);
+        execInfer(leftToRightAnalysis, projectPath);
 
         renameReportFile(inferOutUri, "left-to-right-report.txt");
 
-        inferConfig.swap();
-        json = gson.toJson(inferConfig);
-
-        try (FileWriter writer = new FileWriter(Path.of(projectPath, INFER_PACKAGE_PATH, INFER_CONFIG_NAME).toString())) {
-            writer.write(json);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         System.out.println("Infer Executing right -> left...");
-        System.out.println(analyzeCommand);
-        execInfer(analyzeCommand, projectPath);
+        System.out.println(rightToLeftAnalysis);
+        execInfer(rightToLeftAnalysis, projectPath);
 
         renameReportFile(inferOutUri, "right-to-left-report.txt");
     }

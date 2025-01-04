@@ -26,12 +26,6 @@ public class InferVisitor extends ASTVisitor {
     }
 
     @Override
-    public boolean visit(TypeDeclaration node) {
-        collectedMergeDataByFile.addClassName(INFER_PACKAGE_NAME + "." + node.getName().getIdentifier());
-        return super.visit(node);
-    }
-
-    @Override
     public boolean visit(VariableDeclarationFragment node) {
         String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) {

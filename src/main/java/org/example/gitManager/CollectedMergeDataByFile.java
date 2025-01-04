@@ -10,7 +10,6 @@ import java.util.Set;
 public class CollectedMergeDataByFile {
     private Project project;
     private String filePath;
-    private List<String> classNames;
     private Set<Integer> leftAddedLines;
     private Set<Integer> rightAddedLines;
 
@@ -19,7 +18,6 @@ public class CollectedMergeDataByFile {
         this.filePath = filePath;
         this.leftAddedLines = leftAddedLines;
         this.rightAddedLines = rightAddedLines;
-        this.classNames = new ArrayList<>();
     }
 
     public String getFilePath() {
@@ -42,8 +40,4 @@ public class CollectedMergeDataByFile {
     public String getProjectPath() {return project.getPath();}
 
     public String getFileName() {return  Path.of(filePath).getFileName().toString(); }
-
-    public void addClassName(String className) {
-        classNames.add(className);
-    }
 }
