@@ -77,7 +77,7 @@ public class ModifiedLinesManager {
         for (String filePath : filePaths) {
             Set<Integer> leftAddedLines = leftAddedLinesByFilePath.get(filePath);
             Set<Integer> rightAddedLines = rightAddedLinesByFilePath.get(filePath);
-            collectedMergeDataByFiles.add(new CollectedMergeDataByFile(project, project.getPath() + filePath, leftAddedLines, rightAddedLines));
+            collectedMergeDataByFiles.add(new CollectedMergeDataByFile(project.getPath() + filePath, leftAddedLines, rightAddedLines));
         }
         return collectedMergeDataByFiles;
     }
