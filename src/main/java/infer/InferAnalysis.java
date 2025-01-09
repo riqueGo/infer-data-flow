@@ -5,15 +5,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-import static infer.InferUtils.*;
+import static infer.InferConstants.*;
+import static org.example.utils.PathToString.getPath;
+import static org.example.utils.PathToString.resolvePath;
 
 public class InferAnalysis {
 
     public void executeDataFlowAnalysis(String projectPath) {
         Path inferDestinationPackagePath = Path.of(projectPath, INFER_PACKAGE_PATH);
         Path inferSourcePackagePath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
-        String inferOutUri = inferDestinationPackagePath.resolve(INFER_OUT).toString();
-        String gradlewPath = Path.of(projectPath, "gradlew").toString();
+        String inferOutUri = resolvePath(inferDestinationPackagePath, INFER_OUT);
+        String gradlewPath = getPath(projectPath, "gradlew");
 
         String buildCommand;
         if (isGradleProject(projectPath)) {

@@ -1,41 +1,28 @@
 package infer;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
-import org.example.gitManager.CollectedMergeDataByFile;
-
-import java.util.List;
-
-import static infer.InferUtils.*;
 
 public class InferVisitor extends ASTVisitor {
-    private CollectedMergeDataByFile collectedMergeDataByFile;
-    private CompilationUnit compilationUnit;
-    private ASTRewrite rewriter;
+    private final InferGenerateCode inferGenerateCode;
+    private final InferVisitorHelper helper;
 
-
-    public InferVisitor(
-            CollectedMergeDataByFile collectedMergeDataByFile,
-            CompilationUnit compilationUnit,
-            ASTRewrite rewriter
-    ) {
-        this.collectedMergeDataByFile = collectedMergeDataByFile;
-        this.compilationUnit = compilationUnit;
-        this.rewriter = rewriter;
+    public InferVisitor (InferGenerateCode inferGenerateCode, InferVisitorHelper helper) {
+        this.inferGenerateCode = inferGenerateCode;
+        this.helper = helper;
     }
 
     @Override
     public boolean visit(VariableDeclarationFragment node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) {
             return super.visit(node);
         }
 
         Expression initializer = node.getInitializer();
         if (initializer != null && !(initializer instanceof ClassInstanceCreation || initializer instanceof MethodInvocation)) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
-            rewriter.set(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
+            inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
         }
 
         return super.visit(node);
@@ -43,15 +30,15 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(Assignment node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
 
         Assignment.Operator operator = node.getOperator();
         if(operator == Assignment.Operator.ASSIGN) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, node.getRightHandSide());
-            rewriter.set(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, node.getRightHandSide());
+            inferGenerateCode.rewriterSet(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
         } else {
             // Create the new right-hand side
             InfixExpression infixExpression = ast.newInfixExpression();
@@ -68,7 +55,7 @@ public class InferVisitor extends ASTVisitor {
             }
 
             // Wrap the new right-hand side in InferWrapper
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, infixExpression);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, infixExpression);
 
             // Replace the original assignment with a standard assignment using the wrapped RHS
             Assignment newAssignment = ast.newAssignment();
@@ -76,7 +63,7 @@ public class InferVisitor extends ASTVisitor {
             newAssignment.setRightHandSide(inferWrapper);
             newAssignment.setOperator(Assignment.Operator.ASSIGN);
 
-            rewriter.replace(node, newAssignment, null);
+            inferGenerateCode.rewriterReplace(node, newAssignment, null);
         }
 
         return super.visit(node);
@@ -84,53 +71,53 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(PrefixExpression node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         if(node.getParent() instanceof ExpressionStatement expressionStatement) {
             AST ast = node.getAST();
 
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-            rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            inferGenerateCode.rewriterReplace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
         }
         return super.visit(node);
     }
 
     @Override
     public boolean visit(PostfixExpression node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         if(node.getParent() instanceof ExpressionStatement expressionStatement) {
             AST ast = node.getAST();
 
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-            rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            inferGenerateCode.rewriterReplace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
         }
         return super.visit(node);
     }
 
     @Override
     public boolean visit(InfixExpression node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
 
         if (node.getLeftOperand() instanceof SimpleName leftOperand) {
-            MethodInvocation wrappedLeftOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, leftOperand);
-            rewriter.replace(leftOperand, wrappedLeftOperand, null);
+            MethodInvocation wrappedLeftOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, leftOperand);
+            inferGenerateCode.rewriterReplace(leftOperand, wrappedLeftOperand, null);
         }
 
         if (node.getRightOperand() instanceof SimpleName rightOperand) {
-            MethodInvocation wrappedRightOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, rightOperand);
-            rewriter.replace(rightOperand, wrappedRightOperand, null);
+            MethodInvocation wrappedRightOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, rightOperand);
+            inferGenerateCode.rewriterReplace(rightOperand, wrappedRightOperand, null);
         }
 
         for (Object extendedOperandObj : node.extendedOperands()) {
             if (extendedOperandObj instanceof SimpleName extendedOperand) {
-                MethodInvocation wrappedExtendedOperand = wrapInferMethodInvocation(ast, nameMethodInvocation, extendedOperand);
-                rewriter.replace((ASTNode) extendedOperandObj, wrappedExtendedOperand, null);
+                MethodInvocation wrappedExtendedOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, extendedOperand);
+                inferGenerateCode.rewriterReplace((ASTNode) extendedOperandObj, wrappedExtendedOperand, null);
             }
         }
 
@@ -139,7 +126,7 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(ForStatement node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
         AST ast = node.getAST();
@@ -151,21 +138,21 @@ public class InferVisitor extends ASTVisitor {
 
                 Expression initializer = fragment.getInitializer();
                 if (initializer != null) {
-                    MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
-                    rewriter.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
+                    MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
+                    inferGenerateCode.rewriterSet(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
                 }
             }
         }
 
         if(node.getExpression() instanceof SimpleName condition) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
-            rewriter.replace(condition, inferWrapper, null);
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
+            inferGenerateCode.rewriterReplace(condition, inferWrapper, null);
         }
 
-        ListRewrite updateRewrite = rewriter.getListRewrite(node, ForStatement.UPDATERS_PROPERTY);
+        ListRewrite updateRewrite = inferGenerateCode.getListRewrite(node, ForStatement.UPDATERS_PROPERTY);
         for(Object updaterObj : node.updaters()) {
             if(updaterObj instanceof Expression updater) {
-                MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, updater);
+                MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, updater);
                 updateRewrite.replace(updater, inferWrapper, null);
             }
         }
@@ -175,93 +162,24 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(ClassInstanceCreation node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) {
             return super.visit(node);
         }
 
-        wrapClassIntanceCreation(node, nameMethodInvocation);
+        helper.wrapClassIntanceCreation(node, nameMethodInvocation);
         return false;
     }
 
     @Override
     public boolean visit(MethodInvocation node) {
-        String nameMethodInvocation = getNameMethodInferWrapperInvocation(node);
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) {
             return super.visit(node);
         }
 
-        wrapMethodInvocation(node, nameMethodInvocation);
-        return false;
-    }
+        helper.wrapMethodInvocation(node, nameMethodInvocation);
 
-    private String getNameMethodInferWrapperInvocation(ASTNode node) {
-        int nodeLine = compilationUnit.getLineNumber(node.getStartPosition());
-        return collectedMergeDataByFile.getWhoChangedTheLine(nodeLine);
-    }
-
-    private MethodInvocation wrapInferMethodInvocation(AST ast, String nameMethodInvocation, Expression expression) {
-        MethodInvocation methodInvocation = ast.newMethodInvocation();
-        methodInvocation.setExpression(ast.newSimpleName(WRAPPER_CLASS_NAME));
-        methodInvocation.setName(ast.newSimpleName(nameMethodInvocation));
-        methodInvocation.arguments().add(ASTNode.copySubtree(ast, expression));
-        return methodInvocation;
-    }
-
-    private void wrapArguments(Expression node, String nameMethodInvocation, List<Expression> arguments) {
-        for (Expression argument : arguments) {
-            if (argument instanceof ClassInstanceCreation nestedInstanceCreation) { // Recursive wrapping for nested ClassInstanceCreation
-                wrapClassIntanceCreation(nestedInstanceCreation, nameMethodInvocation);
-            } else if (argument instanceof MethodInvocation nestedInvocation) { // Recursive wrapping for nested MethodInvocation
-                wrapMethodInvocation(nestedInvocation, nameMethodInvocation);
-            } else {
-                MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
-                rewriter.replace(argument, wrappedArgument, null);
-                argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
-            }
-        }
-    }
-
-    private void updateArguments(List<Expression> arguments) {
-        for (int i = 0; i < arguments.size(); i++) {
-            Expression argument = arguments.get(i);
-            Expression argumentUpdated = (Expression) argument.getProperty(REWRITTEN_PROPERTY);
-            if (argumentUpdated != null) {
-                arguments.set(i, argumentUpdated);
-            }
-        }
-    }
-
-    private void wrapMethodInvocation(MethodInvocation node, String nameMethodInvocation) {
-        wrapArguments(node, nameMethodInvocation, node.arguments());
-        updateArguments(node.arguments());
-
-        IMethodBinding methodBinding = node.resolveMethodBinding();
-        if (methodBinding == null) {return;}
-
-        // Wrap the MethodInvocation itself if it's not void
-        boolean isVoid = methodBinding.getReturnType().isPrimitive() && "void".equals(methodBinding.getReturnType().getName());
-        if (!isVoid) {
-            AST ast = node.getAST();
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, node);
-
-            if (node.getParent() instanceof ExpressionStatement expressionStatement) {
-                rewriter.replace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
-            } else {
-                rewriter.replace(node, inferWrapper, null);
-                node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
-            }
-        }
-    }
-
-    private void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
-        if(node.arguments().isEmpty()) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-            rewriter.replace(node, inferWrapper, null);
-            node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
-        } else {
-            wrapArguments(node, nameMethodInvocation, node.arguments());
-            updateArguments(node.arguments());
-        }
+        return super.visit(node);
     }
 }

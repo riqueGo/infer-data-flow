@@ -1,8 +1,9 @@
 package infer;
 
 import org.eclipse.jdt.core.dom.*;
-import java.nio.file.Path;
-import static infer.InferUtils.SOURCE_PROJECT_PATH;
+import static infer.InferConstants.SOURCE_PROJECT_PATH;
+import static org.example.utils.PathToString.getFileName;
+import static org.example.utils.PathToString.getPath;
 
 public class InferParser {
 
@@ -13,11 +14,11 @@ public class InferParser {
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
 
-        String[] sourcepath = {Path.of(projectPath, SOURCE_PROJECT_PATH).toString()};
+        String[] sourcepath = { getPath(projectPath, SOURCE_PROJECT_PATH) };
 
         parser.setEnvironment(null, sourcepath, null, true);
         parser.setSource(sourceFile.toCharArray());
-        parser.setUnitName(Path.of(filePath).getFileName().toString());
+        parser.setUnitName(getFileName(filePath));
 
         return (CompilationUnit) parser.createAST(null);
     }

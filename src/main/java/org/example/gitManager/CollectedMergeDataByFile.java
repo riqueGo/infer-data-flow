@@ -1,20 +1,13 @@
 package org.example.gitManager;
 
-import project.Project;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 public class CollectedMergeDataByFile {
-    private Project project;
     private String filePath;
     private Set<Integer> leftAddedLines;
     private Set<Integer> rightAddedLines;
 
-    public CollectedMergeDataByFile(Project project, String filePath, Set<Integer> leftAddedLines, Set<Integer> rightAddedLines) {
-        this.project = project;
+    public CollectedMergeDataByFile(String filePath, Set<Integer> leftAddedLines, Set<Integer> rightAddedLines) {
         this.filePath = filePath;
         this.leftAddedLines = leftAddedLines;
         this.rightAddedLines = rightAddedLines;
@@ -36,8 +29,4 @@ public class CollectedMergeDataByFile {
         }
         return "";
     }
-
-    public String getProjectPath() {return project.getPath();}
-
-    public String getFileName() {return  Path.of(filePath).getFileName().toString(); }
 }
