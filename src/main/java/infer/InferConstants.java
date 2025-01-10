@@ -12,4 +12,5 @@ public class InferConstants {
     public static final String INFER_OUT = "infer-out";
     public static final String REWRITTEN_PROPERTY = "rewritten";
     public static final String WORKING_DIRECTORY = System.getProperty("user.dir");
+    public static final int INTERPROCEDURAL_DEPTH = 5;
 }

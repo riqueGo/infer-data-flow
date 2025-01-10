@@ -179,7 +179,6 @@ public class InferVisitor extends ASTVisitor {
         }
 
         helper.wrapMethodInvocation(node, nameMethodInvocation);
-
-        return super.visit(node);
+        return false;
     }
 }

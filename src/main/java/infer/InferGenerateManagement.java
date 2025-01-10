@@ -1,15 +1,19 @@
 package infer;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
+import java.io.IOException;
 import java.util.HashMap;
+
+import static org.example.utils.PathToString.fileSourceToString;
 
 public final class InferGenerateManagement {
     private static volatile InferGenerateManagement instance;
 
     public static String PROJECT_PATH;
-    private HashMap<String, InferGenerateCode> generateDataByFilePath;
+    private final HashMap<String, InferGenerateCode> generateDataByFilePath;
 
     private InferGenerateManagement(String projectPath) {
         PROJECT_PATH = projectPath;
@@ -23,13 +27,25 @@ public final class InferGenerateManagement {
         return instance;
     }
 
-    public String getProjectPath() {
-        return PROJECT_PATH;
-    }
+    public InferGenerateCode addGenerateData(String filePath)  {
+        InferGenerateCode generateData = null;
+        try {
+            String source = fileSourceToString(filePath);
 
-    public InferGenerateCode addGenerateData(String filePath, CompilationUnit compilationUnit, ASTRewrite rewriter) {
-        InferGenerateCode generateData = new InferGenerateCode(filePath, compilationUnit, rewriter);
-        generateDataByFilePath.put(filePath, generateData);
+            InferParser inferParser = new InferParser();
+            CompilationUnit compilationUnit = inferParser.getCompilationUnit(filePath, PROJECT_PATH, source);
+
+            AST ast = compilationUnit.getAST();
+            ASTRewrite rewriter = ASTRewrite.create(ast);
+
+            generateData = new InferGenerateCode(filePath, source, compilationUnit, rewriter);
+            generateDataByFilePath.put(filePath, generateData);
+
+            generateData.changeProgramToInferPackage(ast);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return generateData;
     }
 
@@ -37,4 +53,14 @@ public final class InferGenerateManagement {
         generateDataByFilePath.remove(filePath);
     }
 
+    public boolean containsGenerateData(String filePath) {
+        return generateDataByFilePath.containsKey(filePath);
+    }
+
+    public InferGenerateCode getOrCreateGenerateData(String filePath) {
+        if (generateDataByFilePath.containsKey(filePath)) {
+            return generateDataByFilePath.get(filePath);
+        }
+        return addGenerateData(filePath);
+    }
 }

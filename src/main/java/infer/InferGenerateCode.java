@@ -18,11 +18,13 @@ import static org.example.utils.PathToString.getFileName;
 
 public class InferGenerateCode {
     private String filePath;
+    private String source;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
 
-    InferGenerateCode(String filePath, CompilationUnit compilationUnit, ASTRewrite rewriter) {
+    InferGenerateCode(String filePath, String source, CompilationUnit compilationUnit, ASTRewrite rewriter) {
         this.filePath = filePath;
+        this.source = source;
         this.compilationUnit = compilationUnit;
         this.rewriter = rewriter;
     }
@@ -31,7 +33,7 @@ public class InferGenerateCode {
         return filePath;
     }
 
-    public void createInferClassFile(String source) {
+    public void createInferClassFile() {
         String targetPath = PROJECT_PATH + INFER_PACKAGE_PATH;
         String fileName = getFileName(filePath);
 
@@ -87,5 +89,9 @@ public class InferGenerateCode {
 
     public final ListRewrite getListRewrite(ASTNode node, ChildListPropertyDescriptor property) {
         return rewriter.getListRewrite(node, property);
+    }
+
+    public final void accept(ASTVisitor visitor) {
+        compilationUnit.accept(visitor);
     }
 }

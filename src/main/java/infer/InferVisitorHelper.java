@@ -10,11 +10,18 @@ import static org.example.utils.PathToString.getPath;
 
 public class InferVisitorHelper {
     private final InferGenerateCode inferGenerateCode;
-    private final Function<Integer, String> getWhoChangedTheLine;
+    private Function<Integer, String> getWhoChangedTheLine = x -> "";
+    private int depth;
 
-    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine) {
+    public InferVisitorHelper(InferGenerateCode inferGenerateCode, int depth) {
+        this.inferGenerateCode = inferGenerateCode;
+        this.depth = depth;
+    }
+
+    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
+        this.depth = depth;
     }
 
     public String getNameMethodInferWrapperInvocation(ASTNode node) {
@@ -84,11 +91,8 @@ public class InferVisitorHelper {
         String filePathAnalysing = getPath(PROJECT_PATH, SOURCE_PROJECT_PATH, sourceFilePath);
         String methodName = node.getName().toString();
 
-        if (filePathAnalysing.equals(inferGenerateCode.getFilePath())) {
-
-        } else {
-
-        }
+        InferGenerate inferGenerate = new InferGenerate(PROJECT_PATH);
+        inferGenerate.generateInferInterproceduralMethodCode(filePathAnalysing, methodName, nameMethodInvocation, depth-1);
     }
 
     public void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
