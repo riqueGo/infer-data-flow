@@ -108,21 +108,11 @@ public class InferVisitor extends ASTVisitor {
 
         AST ast = node.getAST();
 
-        if (node.getLeftOperand() instanceof SimpleName leftOperand) {
-            MethodInvocation wrappedLeftOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, leftOperand);
-            inferGenerateCode.rewriterReplace(leftOperand, wrappedLeftOperand, null);
-        }
-
-        if (node.getRightOperand() instanceof SimpleName rightOperand) {
-            MethodInvocation wrappedRightOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, rightOperand);
-            inferGenerateCode.rewriterReplace(rightOperand, wrappedRightOperand, null);
-        }
+        helper.wrapIfSimpleName(node.getLeftOperand(), ast, nameMethodInvocation);
+        helper.wrapIfSimpleName(node.getRightOperand(), ast, nameMethodInvocation);
 
         for (Object extendedOperandObj : node.extendedOperands()) {
-            if (extendedOperandObj instanceof SimpleName extendedOperand) {
-                MethodInvocation wrappedExtendedOperand = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, extendedOperand);
-                inferGenerateCode.rewriterReplace((ASTNode) extendedOperandObj, wrappedExtendedOperand, null);
-            }
+            helper.wrapIfSimpleName((Expression) extendedOperandObj, ast, nameMethodInvocation);
         }
 
         return super.visit(node);
@@ -131,45 +121,27 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(ForStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
-
-        AST ast = node.getAST();
-
-        if(node.getExpression() instanceof SimpleName condition) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
-            inferGenerateCode.rewriterReplace(condition, inferWrapper, null);
+        if (!nameMethodInvocation.isBlank()) {
+            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
         }
-
         return super.visit(node);
     }
 
     @Override
     public boolean visit(IfStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
-
-        AST ast = node.getAST();
-
-        if(node.getExpression() instanceof SimpleName condition) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
-            inferGenerateCode.rewriterReplace(condition, inferWrapper, null);
+        if (!nameMethodInvocation.isBlank()) {
+            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
         }
-
         return super.visit(node);
     }
 
     @Override
     public boolean visit(WhileStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
-
-        AST ast = node.getAST();
-
-        if(node.getExpression() instanceof SimpleName condition) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, condition);
-            inferGenerateCode.rewriterReplace(condition, inferWrapper, null);
+        if (!nameMethodInvocation.isBlank()) {
+            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
         }
-
         return super.visit(node);
     }
 
@@ -193,5 +165,13 @@ public class InferVisitor extends ASTVisitor {
 
         helper.wrapMethodInvocation(node, nameMethodInvocation);
         return false;
+    }
+
+    @Override
+    public boolean visit(MethodDeclaration node) {
+        if (helper.getMethodVisiting().isBlank()) {
+            return super.visit(node);
+        }
+        return node.getName().toString().equals(helper.getMethodVisiting());
     }
 }

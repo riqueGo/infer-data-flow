@@ -9,34 +9,36 @@ import org.eclipse.text.edits.TextEditGroup;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static infer.InferConstants.INFER_PACKAGE_NAME;
 import static infer.InferConstants.INFER_PACKAGE_PATH;
 import static infer.InferGenerateManagement.PROJECT_PATH;
-import static org.example.utils.PathToString.getFileName;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.example.utils.PathToString.*;
 
 public class InferGenerateCode {
     private String filePath;
     private String source;
+    private boolean isCompilationActive;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
 
-    InferGenerateCode(String filePath, String source, CompilationUnit compilationUnit, ASTRewrite rewriter) {
-        this.filePath = filePath;
-        this.source = source;
-        this.compilationUnit = compilationUnit;
-        this.rewriter = rewriter;
+    InferGenerateCode(String sourceFilePath) {
+        String targetPath = PROJECT_PATH + INFER_PACKAGE_PATH;
+        String fileName = getFileName(sourceFilePath);
+        this.filePath = getPath(targetPath, fileName);
+
+        copyFileToInferPackage(sourceFilePath);
+        activeCompilation();
     }
 
     public String getFilePath() {
         return filePath;
     }
 
-    public void createInferClassFile() {
-        String targetPath = PROJECT_PATH + INFER_PACKAGE_PATH;
-        String fileName = getFileName(filePath);
-
+    public void rewriteFile() {
         Document document = new Document(source);
         TextEdit edits = rewriter.rewriteAST(document, null);
         try {
@@ -47,7 +49,7 @@ public class InferGenerateCode {
             return;
         }
 
-        Path targetFilePath = Path.of(targetPath, fileName);
+        Path targetFilePath = Path.of(filePath);
 
         try (FileWriter writer = new FileWriter(targetFilePath.toFile())) {
             writer.write(document.get());
@@ -61,12 +63,11 @@ public class InferGenerateCode {
         PackageDeclaration oldPackage = compilationUnit.getPackage();
         String oldPackageName = oldPackage.getName().getFullyQualifiedName();
 
-        PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
-        newPackageDeclaration.setName(ast.newName(INFER_PACKAGE_NAME));
-        rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
-
-        // Add an import statement for the old package
         if (!oldPackageName.equals(INFER_PACKAGE_NAME)) {
+            PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
+            newPackageDeclaration.setName(ast.newName(INFER_PACKAGE_NAME));
+            rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
+
             ImportDeclaration importDeclaration = ast.newImportDeclaration();
             importDeclaration.setName(ast.newName(oldPackageName));
             importDeclaration.setOnDemand(true);
@@ -93,5 +94,45 @@ public class InferGenerateCode {
 
     public final void accept(ASTVisitor visitor) {
         compilationUnit.accept(visitor);
+    }
+
+    public boolean isActive() {
+        return isCompilationActive;
+    }
+
+    public void desactiveCompilation() {
+        this.isCompilationActive = false;
+        this.source = null;
+        this.compilationUnit = null;
+        this.rewriter = null;
+    }
+
+    public void activeCompilation() {
+        try {
+            source = fileSourceToString(filePath);
+
+            InferParser inferParser = new InferParser();
+            compilationUnit = inferParser.getCompilationUnit(filePath, PROJECT_PATH, source);
+
+            AST ast = compilationUnit.getAST();
+            rewriter = ASTRewrite.create(ast);
+
+            changeProgramToInferPackage(ast);
+
+            isCompilationActive = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void copyFileToInferPackage(String sourceFilePath) {
+        Path sourcePath = Path.of(sourceFilePath);
+        Path targetPath = Path.of(filePath);
+
+        try {
+            Files.copy(sourcePath, targetPath, REPLACE_EXISTING);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

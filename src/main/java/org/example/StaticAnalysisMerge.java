@@ -25,6 +25,7 @@ public class StaticAnalysisMerge {
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
         List<CollectedMergeDataByFile> collectedMergeDataByFiles = modifiedLinesManager.collectLineDataByFile(project, mergeCommit);
+
         InferGenerate inferGenerate = new InferGenerate(project.getPath());
         inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles);
 

@@ -10,18 +10,26 @@ import static org.example.utils.PathToString.getPath;
 
 public class InferVisitorHelper {
     private final InferGenerateCode inferGenerateCode;
-    private Function<Integer, String> getWhoChangedTheLine = x -> "";
-    private int depth;
-
-    public InferVisitorHelper(InferGenerateCode inferGenerateCode, int depth) {
-        this.inferGenerateCode = inferGenerateCode;
-        this.depth = depth;
-    }
+    private Function<Integer, String> getWhoChangedTheLine;
+    private final int depth;
+    private final String methodVisiting;
 
     public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
         this.depth = depth;
+        this.methodVisiting = "";
+    }
+
+    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth, String methodVisiting) {
+        this.inferGenerateCode = inferGenerateCode;
+        this.getWhoChangedTheLine = getWhoChangedTheLine;
+        this.depth = depth;
+        this.methodVisiting = methodVisiting;
+    }
+
+    public String getMethodVisiting() {
+        return methodVisiting;
     }
 
     public String getNameMethodInferWrapperInvocation(ASTNode node) {
@@ -42,7 +50,7 @@ public class InferVisitorHelper {
                 wrapClassIntanceCreation(nestedInstanceCreation, nameMethodInvocation);
             } else if (argument instanceof MethodInvocation nestedInvocation) { // Recursive wrapping for nested MethodInvocation
                 wrapMethodInvocation(nestedInvocation, nameMethodInvocation);
-            } else {
+            } else if (argument instanceof SimpleName){
                 MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
                 inferGenerateCode.rewriterReplace(argument, wrappedArgument, null);
                 argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
@@ -96,13 +104,18 @@ public class InferVisitorHelper {
     }
 
     public void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
-        if(node.arguments().isEmpty()) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-            inferGenerateCode.rewriterReplace(node, inferWrapper, null);
-            node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
-        } else {
-            wrapArguments(node, nameMethodInvocation, node.arguments());
-            updateArguments(node.arguments());
+        wrapArguments(node, nameMethodInvocation, node.arguments());
+        updateArguments(node.arguments());
+
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+        inferGenerateCode.rewriterReplace(node, inferWrapper, null);
+        node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
+    }
+
+    public void wrapIfSimpleName(Expression expression, AST ast, String nameMethodInvocation) {
+        if(expression instanceof SimpleName simpleName) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, simpleName);
+            inferGenerateCode.rewriterReplace(simpleName, inferWrapper, null);
         }
     }
 }

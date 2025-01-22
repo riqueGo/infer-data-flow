@@ -6,8 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.function.Function;
-
 import static infer.InferConstants.*;
 import static infer.InferGenerateManagement.PROJECT_PATH;
 
@@ -23,16 +21,14 @@ public class InferGenerate {
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             collectedMergeData.setFilePath("/home/rique/Documents/research/infer-data-flow-test/src/main/java/org/example/ClassC.java");
             String filePath = collectedMergeData.getFilePath();
-            InferGenerateCode inferGenerateCode = generateManagement.addGenerateData(filePath);
-
-            if (inferGenerateCode == null) continue;
+            InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
 
             InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, collectedMergeData::getWhoChangedTheLine, INTERPROCEDURAL_DEPTH);
             InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
 
             inferGenerateCode.accept(inferVisitor);
-            inferGenerateCode.createInferClassFile();
-            generateManagement.removeGenerateData(filePath);
+            inferGenerateCode.rewriteFile();
+            inferGenerateCode.desactiveCompilation();
         }
     }
 
@@ -42,16 +38,14 @@ public class InferGenerate {
         boolean isFirstFileVisiting = !generateManagement.containsGenerateData(filePath);
         InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
 
-        if (inferGenerateCode == null) return;
-
-        InferInterproceduralMethodVisitorHelper visitorHelper = new InferInterproceduralMethodVisitorHelper(inferGenerateCode, depth, methodVisiting, developer);
-        InferInterproceduralMethodVisitor inferVisitor = new InferInterproceduralMethodVisitor(visitorHelper);
+        InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, methodVisiting);
+        InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
 
         inferGenerateCode.accept(inferVisitor);
 
         if (isFirstFileVisiting) {
-            inferGenerateCode.createInferClassFile();
-            generateManagement.removeGenerateData(filePath);
+            inferGenerateCode.rewriteFile();
+            inferGenerateCode.desactiveCompilation();
         }
     }
 
