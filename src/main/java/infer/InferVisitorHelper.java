@@ -75,26 +75,10 @@ public class InferVisitorHelper {
         updateArguments(node.arguments());
 
         IMethodBinding methodBinding = node.resolveMethodBinding();
-        if (methodBinding == null) {return;}
-
-        // Wrap the MethodInvocation itself if it's not void
-        boolean isVoid = methodBinding.getReturnType().isPrimitive() && "void".equals(methodBinding.getReturnType().getName());
-        if (!isVoid) {
-            AST ast = node.getAST();
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, node);
-
-            if (node.getParent() instanceof ExpressionStatement expressionStatement) {
-                inferGenerateCode.rewriterReplace(expressionStatement, ast.newExpressionStatement(inferWrapper), null);
-            } else {
-                inferGenerateCode.rewriterReplace(node, inferWrapper, null);
-                node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
-            }
-        }
+        if (methodBinding == null) { return; }
 
         ITypeBinding declaringClass = methodBinding.getDeclaringClass();
-        if (declaringClass == null) {
-            return;
-        }
+        if (declaringClass == null) { return; }
 
         String qualifiedName = declaringClass.getQualifiedName();
         String sourceFilePath = qualifiedName.replace('.', '/') + ".java";
@@ -108,10 +92,6 @@ public class InferVisitorHelper {
     public void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
-
-        MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
-        inferGenerateCode.rewriterReplace(node, inferWrapper, null);
-        node.setProperty(REWRITTEN_PROPERTY, inferWrapper);
     }
 
     public void wrapIfSimpleName(Expression expression, AST ast, String nameMethodInvocation) {

@@ -20,7 +20,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         Expression initializer = node.getInitializer();
-        if (initializer != null && !(initializer instanceof ClassInstanceCreation || initializer instanceof MethodInvocation)) {
+        if (initializer != null) {
             MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
             inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
         }
