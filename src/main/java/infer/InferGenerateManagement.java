@@ -26,8 +26,8 @@ public final class InferGenerateManagement {
         return generateData;
     }
 
-    public boolean containsGenerateData(String filePath) {
-        return generateDataByFilePath.containsKey(filePath);
+    public boolean hasCompilationActive(String filePath) {
+        return generateDataByFilePath.containsKey(filePath) && generateDataByFilePath.get(filePath).isActive();
     }
 
     public InferGenerateCode getOrCreateGenerateData(String filePath) {

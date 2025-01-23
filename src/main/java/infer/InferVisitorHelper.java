@@ -28,6 +28,8 @@ public class InferVisitorHelper {
         this.methodVisiting = methodVisiting;
     }
 
+    public int getDepth() { return depth; }
+
     public String getMethodVisiting() {
         return methodVisiting;
     }

@@ -19,7 +19,6 @@ public class InferGenerate {
     public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles) {
         createInferPackage(PROJECT_PATH);
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
-            collectedMergeData.setFilePath("/home/rique/Documents/research/infer-data-flow-test/src/main/java/org/example/ClassC.java");
             String filePath = collectedMergeData.getFilePath();
             InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
 
@@ -35,7 +34,7 @@ public class InferGenerate {
     public void generateInferInterproceduralMethodCode(String filePath, String methodVisiting, String developer, int depth) {
         if (depth < 0 || Files.notExists(Path.of(filePath))) return;
 
-        boolean isFirstFileVisiting = !generateManagement.containsGenerateData(filePath);
+        boolean hasCompilationActive = !generateManagement.hasCompilationActive(filePath);
         InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
 
         InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, methodVisiting);
@@ -43,7 +42,7 @@ public class InferGenerate {
 
         inferGenerateCode.accept(inferVisitor);
 
-        if (isFirstFileVisiting) {
+        if (hasCompilationActive) {
             inferGenerateCode.rewriteFile();
             inferGenerateCode.desactiveCompilation();
         }
