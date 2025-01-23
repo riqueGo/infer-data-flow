@@ -12,26 +12,26 @@ public class InferVisitorHelper {
     private final InferGenerateCode inferGenerateCode;
     private Function<Integer, String> getWhoChangedTheLine;
     private final int depth;
-    private final String methodVisiting;
+    private final String methodDeclarationName;
 
     public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
         this.depth = depth;
-        this.methodVisiting = "";
+        this.methodDeclarationName = "";
     }
 
-    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth, String methodVisiting) {
+    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth, String methodDeclarationName) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
         this.depth = depth;
-        this.methodVisiting = methodVisiting;
+        this.methodDeclarationName = methodDeclarationName;
     }
 
     public int getDepth() { return depth; }
 
-    public String getMethodVisiting() {
-        return methodVisiting;
+    public String getMethodDeclarationName() {
+        return methodDeclarationName;
     }
 
     public String getNameMethodInferWrapperInvocation(ASTNode node) {
@@ -74,7 +74,17 @@ public class InferVisitorHelper {
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
-        IMethodBinding methodBinding = node.resolveMethodBinding();
+        interproceduralVisiting(node.resolveMethodBinding(), node.getName().toString(), nameMethodInvocation);
+    }
+
+    public void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
+        wrapArguments(node, nameMethodInvocation, node.arguments());
+        updateArguments(node.arguments());
+
+        interproceduralVisiting(node.resolveConstructorBinding(), node.getType().toString(), nameMethodInvocation);
+    }
+
+    public void interproceduralVisiting(IMethodBinding methodBinding, String methodDeclarationName, String nameMethodInvocation) {
         if (methodBinding == null) { return; }
 
         ITypeBinding declaringClass = methodBinding.getDeclaringClass();
@@ -83,15 +93,9 @@ public class InferVisitorHelper {
         String qualifiedName = declaringClass.getQualifiedName();
         String sourceFilePath = qualifiedName.replace('.', '/') + ".java";
         String filePathAnalysing = getPath(PROJECT_PATH, SOURCE_PROJECT_PATH, sourceFilePath);
-        String methodName = node.getName().toString();
 
         InferGenerate inferGenerate = new InferGenerate(PROJECT_PATH);
-        inferGenerate.generateInferInterproceduralMethodCode(filePathAnalysing, methodName, nameMethodInvocation, depth-1);
-    }
-
-    public void wrapClassIntanceCreation(ClassInstanceCreation node, String nameMethodInvocation) {
-        wrapArguments(node, nameMethodInvocation, node.arguments());
-        updateArguments(node.arguments());
+        inferGenerate.generateInferInterproceduralCode(filePathAnalysing, methodDeclarationName, nameMethodInvocation, depth-1);
     }
 
     public void wrapIfSimpleName(Expression expression, AST ast, String nameMethodInvocation) {

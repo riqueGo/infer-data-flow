@@ -1,7 +1,6 @@
 package infer;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 
 public class InferVisitor extends ASTVisitor {
     private final InferGenerateCode inferGenerateCode;
@@ -169,9 +168,9 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(MethodDeclaration node) {
-        if (helper.getMethodVisiting().isBlank()) {
+        if (helper.getMethodDeclarationName().isBlank()) {
             return super.visit(node);
         }
-        return node.getName().toString().equals(helper.getMethodVisiting());
+        return node.getName().toString().equals(helper.getMethodDeclarationName());
     }
 }

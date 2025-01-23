@@ -11,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 
 import static infer.InferConstants.INFER_PACKAGE_NAME;
 import static infer.InferConstants.INFER_PACKAGE_PATH;
@@ -24,6 +25,7 @@ public class InferGenerateCode {
     private boolean isCompilationActive;
     private CompilationUnit compilationUnit;
     private ASTRewrite rewriter;
+    private final HashSet<String> alreadyInterproceduralVisitingBy;
 
     InferGenerateCode(String sourceFilePath) {
         String targetPath = PROJECT_PATH + INFER_PACKAGE_PATH;
@@ -32,6 +34,8 @@ public class InferGenerateCode {
 
         copyFileToInferPackage(sourceFilePath);
         activeCompilation();
+
+        alreadyInterproceduralVisitingBy = new HashSet<>();
     }
 
     public String getFilePath() {
@@ -134,5 +138,13 @@ public class InferGenerateCode {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean hasDevAlreadyInterproceduralVisited(String developer, String methodDeclaration) {
+        return alreadyInterproceduralVisitingBy.contains(developer + " - " + methodDeclaration);
+    }
+
+    public void addDevAndMethodDeclaration(String developer, String methodDeclaration) {
+        alreadyInterproceduralVisitingBy.add(developer + " - " + methodDeclaration);
     }
 }

@@ -20,7 +20,7 @@ public class InferGenerate {
         createInferPackage(PROJECT_PATH);
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             String filePath = collectedMergeData.getFilePath();
-            InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
+            InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
 
             InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, collectedMergeData::getWhoChangedTheLine, INTERPROCEDURAL_DEPTH);
             InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
@@ -31,18 +31,25 @@ public class InferGenerate {
         }
     }
 
-    public void generateInferInterproceduralMethodCode(String filePath, String methodVisiting, String developer, int depth) {
+    public void generateInferInterproceduralCode(String filePath, String methodDeclarationName, String developer, int depth) {
         if (depth < 0 || Files.notExists(Path.of(filePath))) return;
 
-        boolean hasCompilationActive = !generateManagement.hasCompilationActive(filePath);
-        InferGenerateCode inferGenerateCode = generateManagement.getOrCreateGenerateData(filePath);
+        boolean firstVisiting = !generateManagement.hasCompilationActive(filePath);
+        InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
 
-        InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, methodVisiting);
+        if (inferGenerateCode.hasDevAlreadyInterproceduralVisited(developer, methodDeclarationName)) { return; }
+        inferGenerateCode.addDevAndMethodDeclaration(developer, methodDeclarationName);
+
+        if (!inferGenerateCode.isActive()) {
+            inferGenerateCode.activeCompilation();
+        }
+
+        InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, methodDeclarationName);
         InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
 
         inferGenerateCode.accept(inferVisitor);
 
-        if (hasCompilationActive) {
+        if (firstVisiting) {
             inferGenerateCode.rewriteFile();
             inferGenerateCode.desactiveCompilation();
         }

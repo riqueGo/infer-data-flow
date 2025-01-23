@@ -30,14 +30,7 @@ public final class InferGenerateManagement {
         return generateDataByFilePath.containsKey(filePath) && generateDataByFilePath.get(filePath).isActive();
     }
 
-    public InferGenerateCode getOrCreateGenerateData(String filePath) {
-        if (generateDataByFilePath.containsKey(filePath)) {
-            InferGenerateCode generateData = generateDataByFilePath.get(filePath);
-            if (!generateData.isActive()) {
-                generateData.activeCompilation();
-            }
-            return generateData;
-        }
-        return addGenerateData(filePath);
+    public InferGenerateCode getGenerateData(String filePath) {
+        return generateDataByFilePath.containsKey(filePath) ? generateDataByFilePath.get(filePath) : addGenerateData(filePath);
     }
 }
