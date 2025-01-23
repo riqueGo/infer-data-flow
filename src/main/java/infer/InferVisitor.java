@@ -65,6 +65,13 @@ public class InferVisitor extends ASTVisitor {
             inferGenerateCode.rewriterReplace(node, newAssignment, null);
         }
 
+        Expression lhs = node.getLeftHandSide();
+        if (lhs instanceof QualifiedName qualifiedName) {
+            Expression base = qualifiedName.getQualifier();
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, base);
+            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+        }
+
         return super.visit(node);
     }
 
