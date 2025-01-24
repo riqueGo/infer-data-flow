@@ -110,6 +110,10 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(InfixExpression node) {
+        if (!(node.getParent() instanceof IfStatement || node.getParent() instanceof WhileStatement || node.getParent() instanceof ForStatement)) {
+            return super.visit(node);
+        }
+
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
@@ -180,5 +184,21 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
         return node.getName().toString().equals(helper.getMethodDeclarationName());
+    }
+
+    @Override
+    public boolean visit(ReturnStatement node) {
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation.isBlank()) {
+            return super.visit(node);
+        }
+
+        Expression returnExpression = node.getExpression();
+        if (returnExpression != null) {
+            MethodInvocation wrappedExpression = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, returnExpression);
+            inferGenerateCode.rewriterSet(node, ReturnStatement.EXPRESSION_PROPERTY, wrappedExpression, null);
+        }
+
+        return super.visit(node);
     }
 }
