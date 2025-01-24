@@ -74,6 +74,10 @@ public class InferVisitorHelper {
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
+        if (node.getParent() instanceof VariableDeclarationFragment || node.getParent() instanceof Assignment) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            inferGenerateCode.rewriterReplace(node, inferWrapper, null);
+        }
         interproceduralVisiting(node.resolveMethodBinding(), node.getName().toString(), nameMethodInvocation);
     }
 
@@ -81,6 +85,10 @@ public class InferVisitorHelper {
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
+        if (node.getParent() instanceof VariableDeclarationFragment || node.getParent() instanceof Assignment) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
+            inferGenerateCode.rewriterReplace(node, inferWrapper, null);
+        }
         interproceduralVisiting(node.resolveConstructorBinding(), node.getType().toString(), nameMethodInvocation);
     }
 

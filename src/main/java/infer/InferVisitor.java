@@ -19,7 +19,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         Expression initializer = node.getInitializer();
-        if (initializer != null) {
+        if (initializer != null && !(initializer instanceof MethodInvocation || initializer instanceof ClassInstanceCreation)) {
             MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
             inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
         }
@@ -35,14 +35,16 @@ public class InferVisitor extends ASTVisitor {
         AST ast = node.getAST();
 
         Assignment.Operator operator = node.getOperator();
-        if(operator == Assignment.Operator.ASSIGN) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, node.getRightHandSide());
+        Expression lhs = node.getLeftHandSide(), rhs = node.getRightHandSide();
+
+        if(operator == Assignment.Operator.ASSIGN && !(rhs instanceof MethodInvocation || rhs instanceof ClassInstanceCreation)) {
+            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, rhs);
             inferGenerateCode.rewriterSet(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
         } else {
             // Create the new right-hand side
             InfixExpression infixExpression = ast.newInfixExpression();
-            infixExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, node.getLeftHandSide()));
-            infixExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, node.getRightHandSide()));
+            infixExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, lhs));
+            infixExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, rhs));
 
             switch (operator.toString()) {
                 case "+=" -> infixExpression.setOperator(InfixExpression.Operator.PLUS);
@@ -58,14 +60,13 @@ public class InferVisitor extends ASTVisitor {
 
             // Replace the original assignment with a standard assignment using the wrapped RHS
             Assignment newAssignment = ast.newAssignment();
-            newAssignment.setLeftHandSide((Expression) ASTNode.copySubtree(ast, node.getLeftHandSide()));
+            newAssignment.setLeftHandSide((Expression) ASTNode.copySubtree(ast, lhs));
             newAssignment.setRightHandSide(inferWrapper);
             newAssignment.setOperator(Assignment.Operator.ASSIGN);
 
             inferGenerateCode.rewriterReplace(node, newAssignment, null);
         }
 
-        Expression lhs = node.getLeftHandSide();
         if (lhs instanceof QualifiedName qualifiedName) {
             Expression base = qualifiedName.getQualifier();
             MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, base);
