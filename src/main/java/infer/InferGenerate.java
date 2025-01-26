@@ -31,7 +31,7 @@ public class InferGenerate {
         }
     }
 
-    public void generateInferInterproceduralCode(String filePath, String methodDeclarationName, String developer, int depth) {
+    public void generateInferInterproceduralCode(String filePath, String classVisiting, String methodDeclarationName, String developer, int depth) {
         if (depth < 0 || Files.notExists(Path.of(filePath))) return;
 
         boolean firstVisiting = !generateManagement.hasCompilationActive(filePath);
@@ -44,7 +44,7 @@ public class InferGenerate {
             inferGenerateCode.activeCompilation();
         }
 
-        InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, methodDeclarationName);
+        InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, classVisiting, methodDeclarationName);
         InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
 
         inferGenerateCode.accept(inferVisitor);

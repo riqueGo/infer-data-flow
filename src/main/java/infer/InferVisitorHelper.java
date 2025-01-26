@@ -12,19 +12,22 @@ public class InferVisitorHelper {
     private final InferGenerateCode inferGenerateCode;
     private Function<Integer, String> getWhoChangedTheLine;
     private final int depth;
+    private final String currentClassName;
     private final String methodDeclarationName;
 
     public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
         this.depth = depth;
+        this.currentClassName = "";
         this.methodDeclarationName = "";
     }
 
-    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth, String methodDeclarationName) {
+    public InferVisitorHelper(InferGenerateCode inferGenerateCode, Function<Integer, String> getWhoChangedTheLine, int depth, String currentClassName, String methodDeclarationName) {
         this.inferGenerateCode = inferGenerateCode;
         this.getWhoChangedTheLine = getWhoChangedTheLine;
         this.depth = depth;
+        this.currentClassName = currentClassName;
         this.methodDeclarationName = methodDeclarationName;
     }
 
@@ -33,6 +36,8 @@ public class InferVisitorHelper {
     public String getMethodDeclarationName() {
         return methodDeclarationName;
     }
+
+    public String getCurrentClassName() { return currentClassName; }
 
     public String getNameMethodInferWrapperInvocation(ASTNode node) {
         return getWhoChangedTheLine.apply(inferGenerateCode.getLineNumber(node.getStartPosition()));
@@ -98,12 +103,16 @@ public class InferVisitorHelper {
         ITypeBinding declaringClass = methodBinding.getDeclaringClass();
         if (declaringClass == null) { return; }
 
-        String qualifiedName = declaringClass.getQualifiedName();
+        String classVisiting = declaringClass.getName();
+
+        ITypeBinding outerClass = getOutermostClass(declaringClass);
+        String qualifiedName = outerClass.getQualifiedName();
+
         String sourceFilePath = qualifiedName.replace('.', '/') + ".java";
         String filePathAnalysing = getPath(PROJECT_PATH, SOURCE_PROJECT_PATH, sourceFilePath);
 
         InferGenerate inferGenerate = new InferGenerate(PROJECT_PATH);
-        inferGenerate.generateInferInterproceduralCode(filePathAnalysing, methodDeclarationName, nameMethodInvocation, depth-1);
+        inferGenerate.generateInferInterproceduralCode(filePathAnalysing, classVisiting, methodDeclarationName, nameMethodInvocation, depth-1);
     }
 
     public void wrapIfSimpleName(Expression expression, AST ast, String nameMethodInvocation) {
@@ -111,6 +120,14 @@ public class InferVisitorHelper {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, simpleName);
             inferGenerateCode.rewriterReplace(simpleName, inferWrapper, null);
         }
+    }
+
+    private ITypeBinding getOutermostClass(ITypeBinding typeBinding) {
+        ITypeBinding current = typeBinding;
+        while (current.getDeclaringClass() != null) {
+            current = current.getDeclaringClass();
+        }
+        return current;
     }
 
     public void wrapLeftHandSide(AST ast, String nameMethodInvocation, Expression lhs) {

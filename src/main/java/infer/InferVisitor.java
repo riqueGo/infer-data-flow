@@ -153,7 +153,18 @@ public class InferVisitor extends ASTVisitor {
         if (helper.getMethodDeclarationName().isBlank()) {
             return super.visit(node);
         }
-        return node.getName().toString().equals(helper.getMethodDeclarationName());
+
+        if(node.getName().toString().equals(helper.getMethodDeclarationName())) {
+            IMethodBinding methodBinding = node.resolveBinding();
+
+            ITypeBinding declaringClass = methodBinding.getDeclaringClass();
+            if (declaringClass == null) { return false; }
+
+            String classVisiting = declaringClass.getName();
+            return helper.getCurrentClassName().equals(classVisiting);
+        }
+
+        return false;
     }
 
     @Override
