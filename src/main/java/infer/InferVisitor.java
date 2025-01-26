@@ -19,7 +19,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         Expression initializer = node.getInitializer();
-        if (initializer != null && !(initializer instanceof MethodInvocation || initializer instanceof ClassInstanceCreation)) {
+        if (initializer != null && !(initializer instanceof MethodInvocation || initializer instanceof ClassInstanceCreation || initializer instanceof NullLiteral)) {
             MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
             inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
         }
@@ -32,47 +32,17 @@ public class InferVisitor extends ASTVisitor {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank()) { return super.visit(node); }
 
+        helper.wrapNonAssignOperator(node, nameMethodInvocation);
+
         AST ast = node.getAST();
+        Expression rhs = node.getRightHandSide();
 
-        Assignment.Operator operator = node.getOperator();
-        Expression lhs = node.getLeftHandSide(), rhs = node.getRightHandSide();
-
-        if(operator == Assignment.Operator.ASSIGN && !(rhs instanceof MethodInvocation || rhs instanceof ClassInstanceCreation)) {
+        if (!(rhs instanceof MethodInvocation || rhs instanceof ClassInstanceCreation || rhs instanceof NullLiteral)) {
             MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, rhs);
             inferGenerateCode.rewriterSet(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
-        } else {
-            // Create the new right-hand side
-            InfixExpression infixExpression = ast.newInfixExpression();
-            infixExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, lhs));
-            infixExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, rhs));
-
-            switch (operator.toString()) {
-                case "+=" -> infixExpression.setOperator(InfixExpression.Operator.PLUS);
-                case "-=" -> infixExpression.setOperator(InfixExpression.Operator.MINUS);
-                case "*=" -> infixExpression.setOperator(InfixExpression.Operator.TIMES);
-                case "/=" -> infixExpression.setOperator(InfixExpression.Operator.DIVIDE);
-                case "%=" -> infixExpression.setOperator(InfixExpression.Operator.REMAINDER);
-                default -> { return super.visit(node); }
-            }
-
-            // Wrap the new right-hand side in InferWrapper
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, infixExpression);
-
-            // Replace the original assignment with a standard assignment using the wrapped RHS
-            Assignment newAssignment = ast.newAssignment();
-            newAssignment.setLeftHandSide((Expression) ASTNode.copySubtree(ast, lhs));
-            newAssignment.setRightHandSide(inferWrapper);
-            newAssignment.setOperator(Assignment.Operator.ASSIGN);
-
-            inferGenerateCode.rewriterReplace(node, newAssignment, null);
         }
 
-        if (lhs instanceof QualifiedName qualifiedName) {
-            Expression base = qualifiedName.getQualifier();
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, base);
-            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
-        }
-
+        helper.wrapLeftHandSide(ast, nameMethodInvocation, node.getLeftHandSide());
         return super.visit(node);
     }
 
@@ -110,7 +80,7 @@ public class InferVisitor extends ASTVisitor {
 
     @Override
     public boolean visit(InfixExpression node) {
-        if (!(node.getParent() instanceof IfStatement || node.getParent() instanceof WhileStatement || node.getParent() instanceof ForStatement)) {
+        if (!(node.getParent() instanceof IfStatement || node.getParent() instanceof WhileStatement || node.getParent() instanceof ForStatement || node.getParent() instanceof InfixExpression)) {
             return super.visit(node);
         }
 

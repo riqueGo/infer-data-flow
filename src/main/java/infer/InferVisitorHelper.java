@@ -112,4 +112,54 @@ public class InferVisitorHelper {
             inferGenerateCode.rewriterReplace(simpleName, inferWrapper, null);
         }
     }
+
+    public void wrapLeftHandSide(AST ast, String nameMethodInvocation, Expression lhs) {
+        if (lhs instanceof QualifiedName qualifiedName) {
+            Expression base = qualifiedName.getQualifier();
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
+            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+        } else if (lhs instanceof FieldAccess fieldAccess) {
+            Expression base = fieldAccess.getExpression();
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
+            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+        }
+    }
+
+    public void wrapNonAssignOperator(Assignment node, String nameMethodInvocation) {
+        AST ast = node.getAST();
+
+        Assignment.Operator operator = node.getOperator();
+        Expression lhs = node.getLeftHandSide(), rhs = node.getRightHandSide();
+
+        if (operator == Assignment.Operator.ASSIGN) {
+            return;
+        }
+
+        // Create the new right-hand side
+        InfixExpression infixExpression = ast.newInfixExpression();
+        infixExpression.setLeftOperand((Expression) ASTNode.copySubtree(ast, lhs));
+        infixExpression.setRightOperand((Expression) ASTNode.copySubtree(ast, rhs));
+
+        switch (operator.toString()) {
+            case "+=" -> infixExpression.setOperator(InfixExpression.Operator.PLUS);
+            case "-=" -> infixExpression.setOperator(InfixExpression.Operator.MINUS);
+            case "*=" -> infixExpression.setOperator(InfixExpression.Operator.TIMES);
+            case "/=" -> infixExpression.setOperator(InfixExpression.Operator.DIVIDE);
+            case "%=" -> infixExpression.setOperator(InfixExpression.Operator.REMAINDER);
+            default -> {
+                return;
+            }
+        }
+
+        // Wrap the new right-hand side in InferWrapper
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, infixExpression);
+
+        // Replace the original assignment with a standard assignment using the wrapped RHS
+        Assignment newAssignment = ast.newAssignment();
+        newAssignment.setLeftHandSide((Expression) ASTNode.copySubtree(ast, lhs));
+        newAssignment.setRightHandSide(inferWrapper);
+        newAssignment.setOperator(Assignment.Operator.ASSIGN);
+
+        inferGenerateCode.rewriterReplace(node, newAssignment, null);
+    }
 }
