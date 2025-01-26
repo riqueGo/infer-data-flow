@@ -144,7 +144,7 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
-        helper.wrapMethodInvocation(node, nameMethodInvocation);
+        helper.wrapChainedMethodInvocation(node, nameMethodInvocation);
         return false;
     }
 

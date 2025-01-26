@@ -97,6 +97,17 @@ public class InferVisitorHelper {
         interproceduralVisiting(node.resolveConstructorBinding(), node.getType().toString(), nameMethodInvocation);
     }
 
+    public void wrapChainedMethodInvocation(MethodInvocation node, String nameMethodInvocation) {
+        // Check if the current method invocation is part of a chain
+        Expression expression = node.getExpression();
+        if (expression instanceof MethodInvocation) {
+            wrapChainedMethodInvocation((MethodInvocation) expression, nameMethodInvocation);
+        } else if (expression instanceof ClassInstanceCreation) {
+            wrapClassIntanceCreation((ClassInstanceCreation) expression, nameMethodInvocation);
+        }
+        wrapMethodInvocation(node, nameMethodInvocation);
+    }
+
     public void interproceduralVisiting(IMethodBinding methodBinding, String methodDeclarationName, String nameMethodInvocation) {
         if (methodBinding == null) { return; }
 
