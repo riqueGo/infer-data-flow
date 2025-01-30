@@ -60,16 +60,20 @@ public class ModifiedLinesManager {
             for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getLeftSHA(), mergeCommit.getSHA())) {
                 leftAddedLines.add(modifiedLine.getNumber());
             }
-            leftAddedLinesByFilePath.put(filePath, leftAddedLines);
-            filePaths.add(filePath);
+            if (!leftAddedLines.isEmpty()) {
+                leftAddedLinesByFilePath.put(filePath, leftAddedLines);
+                filePaths.add(filePath);
+            }
         }
         for (String filePath : FileManager.getModifiedFiles(project, mergeCommit.getRightSHA(), mergeCommit.getAncestorSHA(), "java")){
             Set<Integer> rightAddedLines = new HashSet<>();
             for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getRightSHA(), mergeCommit.getSHA())) {
                 rightAddedLines.add(modifiedLine.getNumber());
             }
-            rightAddedLinesByFilePath.put(filePath, rightAddedLines);
-            filePaths.add(filePath);
+            if (!rightAddedLines.isEmpty()) {
+                rightAddedLinesByFilePath.put(filePath, rightAddedLines);
+                filePaths.add(filePath);
+            }
         }
 
         List<CollectedMergeDataByFile> collectedMergeDataByFiles = new ArrayList<>();
