@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import static infer.InferConstants.*;
-import static infer.InferGenerateManagement.PROJECT_PATH;
 
 public class InferGenerate {
     private final InferGenerateManagement generateManagement;
@@ -17,10 +16,13 @@ public class InferGenerate {
     }
 
     public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles) {
-        createInferPackage(PROJECT_PATH);
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             String filePath = collectedMergeData.getFilePath();
             InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
+
+            if (!inferGenerateCode.isActive()) {
+                inferGenerateCode.activeCompilation();
+            }
 
             InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, collectedMergeData::getWhoChangedTheLine, INTERPROCEDURAL_DEPTH);
             InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
@@ -46,7 +48,6 @@ public class InferGenerate {
 
         InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, x -> developer, depth, classVisiting, methodDeclarationName);
         InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
-
         inferGenerateCode.accept(inferVisitor);
 
         if (firstVisiting) {
@@ -55,20 +56,15 @@ public class InferGenerate {
         }
     }
 
-    private void createInferPackage(String targetPath) {
+    public void createInferPackage(String targetPath) {
         Path sourceDirPath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
         Path targetDirPath = Path.of(targetPath, INFER_PACKAGE_PATH);
         Path wrapperFilePath = sourceDirPath.resolve(WRAPPER_CLASS_NAME + ".java");
 
         try {
-            if (Files.notExists(targetDirPath)) {
-                Files.createDirectories(targetDirPath);
-            }
-
-            if (Files.exists(wrapperFilePath)) {
-                Path targetFile = targetDirPath.resolve(wrapperFilePath.getFileName());
-                Files.copy(wrapperFilePath, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            Files.createDirectories(targetDirPath);
+            Path targetFile = targetDirPath.resolve(wrapperFilePath.getFileName());
+            Files.copy(wrapperFilePath, targetFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             System.err.println("Error creating Infer Package: " + e.getMessage());
             e.printStackTrace();

@@ -9,14 +9,11 @@ import org.eclipse.text.edits.TextEditGroup;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 
-import static infer.InferConstants.INFER_PACKAGE_NAME;
-import static infer.InferConstants.INFER_PACKAGE_PATH;
+import static infer.InferConstants.*;
 import static infer.InferGenerateManagement.PROJECT_PATH;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.example.utils.PathToString.*;
 
 public class InferGenerateCode {
@@ -27,13 +24,10 @@ public class InferGenerateCode {
     private ASTRewrite rewriter;
     private final HashSet<String> alreadyInterproceduralVisitingBy;
 
-    InferGenerateCode(String sourceFilePath) {
-        String targetPath = PROJECT_PATH + INFER_PACKAGE_PATH;
-        String fileName = getFileName(sourceFilePath);
-        this.filePath = getPath(targetPath, fileName);
-
-        copyFileToInferPackage(sourceFilePath);
+    InferGenerateCode(String filePath) {
+        this.filePath = filePath;
         activeCompilation();
+        addInferWrapperImport();
 
         alreadyInterproceduralVisitingBy = new HashSet<>();
     }
@@ -63,21 +57,11 @@ public class InferGenerateCode {
         }
     }
 
-    public void changeProgramToInferPackage(AST ast) {
-        PackageDeclaration oldPackage = compilationUnit.getPackage();
-        String oldPackageName = oldPackage.getName().getFullyQualifiedName();
-
-        if (!oldPackageName.equals(INFER_PACKAGE_NAME)) {
-            PackageDeclaration newPackageDeclaration = ast.newPackageDeclaration();
-            newPackageDeclaration.setName(ast.newName(INFER_PACKAGE_NAME));
-            rewriter.set(compilationUnit, CompilationUnit.PACKAGE_PROPERTY, newPackageDeclaration, null);
-
-            ImportDeclaration importDeclaration = ast.newImportDeclaration();
-            importDeclaration.setName(ast.newName(oldPackageName));
-            importDeclaration.setOnDemand(true);
-
-            rewriter.getListRewrite(compilationUnit, CompilationUnit.IMPORTS_PROPERTY).insertLast(importDeclaration, null);
-        }
+    public void addInferWrapperImport() {
+        AST ast = compilationUnit.getAST();
+        ImportDeclaration importDeclaration = ast.newImportDeclaration();
+        importDeclaration.setName(ast.newName(INFER_PACKAGE_NAME + "." + WRAPPER_CLASS_NAME));
+        rewriter.getListRewrite(compilationUnit, CompilationUnit.IMPORTS_PROPERTY).insertLast(importDeclaration, null);
     }
 
     public int getLineNumber(int position) {
@@ -121,20 +105,7 @@ public class InferGenerateCode {
             AST ast = compilationUnit.getAST();
             rewriter = ASTRewrite.create(ast);
 
-            changeProgramToInferPackage(ast);
-
             isCompilationActive = true;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void copyFileToInferPackage(String sourceFilePath) {
-        Path sourcePath = Path.of(sourceFilePath);
-        Path targetPath = Path.of(filePath);
-
-        try {
-            Files.copy(sourcePath, targetPath, REPLACE_EXISTING);
         } catch (IOException e) {
             e.printStackTrace();
         }

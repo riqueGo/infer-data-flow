@@ -19,6 +19,7 @@ public class StaticAnalysisMerge {
     }
 
     public void run() {
+        System.out.println("Getting files changed by left and right...");
         CommitManager commitManager = new CommitManager(args.getHead(), args.getParents(), args.getBase());
         Project project = new Project("project", args.getTargetProjectRoot());
         ModifiedLinesManager modifiedLinesManager = new ModifiedLinesManager(args.getSsmDependenciesPath());
@@ -26,9 +27,12 @@ public class StaticAnalysisMerge {
 
         List<CollectedMergeDataByFile> collectedMergeDataByFiles = modifiedLinesManager.collectLineDataByFile(project, mergeCommit);
 
+        System.out.println("Starting generate infer code...");
         InferGenerate inferGenerate = new InferGenerate(project.getPath());
+        inferGenerate.createInferPackage(project.getPath());
         inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles);
 
+        System.out.println("Starting Analysis...");
         InferAnalysis inferAnalysis = new InferAnalysis();
         inferAnalysis.executeDataFlowAnalysis(project.getPath());
     }

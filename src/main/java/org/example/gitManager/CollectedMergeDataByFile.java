@@ -23,9 +23,9 @@ public class CollectedMergeDataByFile {
 
     public String getWhoChangedTheLine(int lineNumber) {
         if(leftAddedLines.contains(lineNumber)) {
-            return  "left";
+            return  "l";
         } else if(rightAddedLines.contains(lineNumber)) {
-            return  "right";
+            return  "r";
         }
         return "";
     }
