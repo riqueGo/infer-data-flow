@@ -57,7 +57,7 @@ public class InferVisitorHelper {
                 wrapClassIntanceCreation(nestedInstanceCreation, nameMethodInvocation);
             } else if (argument instanceof MethodInvocation nestedInvocation) { // Recursive wrapping for nested MethodInvocation
                 wrapMethodInvocation(nestedInvocation, nameMethodInvocation);
-            } else if (argument instanceof SimpleName){
+            } else {
                 MethodInvocation wrappedArgument = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, argument);
                 inferGenerateCode.rewriterReplace(argument, wrappedArgument, null);
                 argument.setProperty(REWRITTEN_PROPERTY, wrappedArgument);
@@ -76,14 +76,15 @@ public class InferVisitorHelper {
     }
 
     public void wrapMethodInvocation(MethodInvocation node, String nameMethodInvocation) {
-        if(hasMethodAlreadyWrapped(node, nameMethodInvocation)) {
+        String expressionName = node.getExpression() == null ? "" : node.getExpression().toString();
+        if(hasMethodAlreadyWrapped(expressionName, node.getName().toString(), nameMethodInvocation)) {
             return;
         }
 
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
-        if (node.getParent() instanceof VariableDeclarationFragment || node.getParent() instanceof Assignment) {
+        if (!WRAPPER_CLASS_NAME.equals(expressionName) && (isAssignmentOrVariableDeclarationFragmentNode(node.getParent()))) {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
             inferGenerateCode.rewriterReplace(node, inferWrapper, null);
         }
@@ -94,7 +95,7 @@ public class InferVisitorHelper {
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
-        if (node.getParent() instanceof VariableDeclarationFragment || node.getParent() instanceof Assignment) {
+        if (isAssignmentOrVariableDeclarationFragmentNode(node.getParent())) {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, node);
             inferGenerateCode.rewriterReplace(node, inferWrapper, null);
         }
@@ -160,6 +161,22 @@ public class InferVisitorHelper {
         }
     }
 
+    public void wrapRightHandSide(AST ast, String nameMethodInvocation, Expression rhs) {
+        if (rhs == null || rhs instanceof MethodInvocation || rhs instanceof ClassInstanceCreation || rhs instanceof NullLiteral) {
+            return;
+        }
+
+        ITypeBinding typeBinding = rhs.resolveTypeBinding();
+        if (rhs instanceof ArrayInitializer arrayInitializer && typeBinding != null && typeBinding.isArray()) {
+            ArrayType arrayType = ast.newArrayType(ast.newSimpleType(ast.newName(typeBinding.getElementType().getQualifiedName())));
+            rhs = convertArrayIntitializerToArrayCreation(ast, arrayInitializer, arrayType);
+        }
+
+        MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, rhs);
+        inferGenerateCode.rewriterReplace(rhs, inferWrapper, null);
+
+    }
+
     public void wrapNonAssignOperator(Assignment node, String nameMethodInvocation) {
         AST ast = node.getAST();
 
@@ -198,11 +215,28 @@ public class InferVisitorHelper {
         inferGenerateCode.rewriterReplace(node, newAssignment, null);
     }
 
-    private Boolean hasMethodAlreadyWrapped(MethodInvocation node, String inferMethodInvocation) {
-        String expressionName = node.getExpression() == null ? "" : node.getExpression().toString();
-        String nameMethodCall = expressionName + "." + node.getName().toString();
-
-        String transformedInferMethodCall = WRAPPER_CLASS_NAME + "." + inferMethodInvocation;
+    private boolean hasMethodAlreadyWrapped(String expressionMethodName, String methodCallName, String inferMethodCallName) {
+        String nameMethodCall = expressionMethodName + "." + methodCallName;
+        String transformedInferMethodCall = WRAPPER_CLASS_NAME + "." + inferMethodCallName;
         return transformedInferMethodCall.equals(nameMethodCall);
+    }
+
+    private boolean isAssignmentOrVariableDeclarationFragmentNode(ASTNode node) {
+        return node instanceof VariableDeclarationFragment || node instanceof Assignment;
+    }
+
+    // Convert { "a", "b" } → new String[] { "a", "b" }
+    public ArrayCreation convertArrayIntitializerToArrayCreation(AST ast, ArrayInitializer arrayInitializer, ArrayType arrayType) {
+        // Create an explicit ArrayCreation
+        ArrayCreation arrayCreation = ast.newArrayCreation();
+        arrayCreation.setType(arrayType);
+
+        // Clone the initializer expressions
+        ArrayInitializer newArrayInitializer = ast.newArrayInitializer();
+        newArrayInitializer.expressions().addAll(ASTNode.copySubtrees(ast, arrayInitializer.expressions()));
+        arrayCreation.setInitializer(newArrayInitializer);
+
+        inferGenerateCode.rewriterReplace(arrayInitializer, arrayCreation, null);
+        return arrayCreation;
     }
 }

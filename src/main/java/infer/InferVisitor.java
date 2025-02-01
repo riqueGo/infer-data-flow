@@ -19,10 +19,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         Expression initializer = node.getInitializer();
-        if (initializer != null && !(initializer instanceof MethodInvocation || initializer instanceof ClassInstanceCreation || initializer instanceof NullLiteral)) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, initializer);
-            inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
-        }
+        helper.wrapRightHandSide(node.getAST(), nameMethodInvocation, initializer);
 
         node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
@@ -38,14 +35,9 @@ public class InferVisitor extends ASTVisitor {
         helper.wrapNonAssignOperator(node, nameMethodInvocation);
 
         AST ast = node.getAST();
-        Expression rhs = node.getRightHandSide();
-
-        if (!(rhs instanceof MethodInvocation || rhs instanceof ClassInstanceCreation || rhs instanceof NullLiteral)) {
-            MethodInvocation inferWrapper = helper.wrapInferMethodInvocation(ast, nameMethodInvocation, rhs);
-            inferGenerateCode.rewriterSet(node, Assignment.RIGHT_HAND_SIDE_PROPERTY, inferWrapper, null);
-        }
-
+        helper.wrapRightHandSide(ast, nameMethodInvocation, node.getRightHandSide());
         helper.wrapLeftHandSide(ast, nameMethodInvocation, node.getLeftHandSide());
+
         node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
