@@ -76,6 +76,10 @@ public class InferVisitorHelper {
     }
 
     public void wrapMethodInvocation(MethodInvocation node, String nameMethodInvocation) {
+        if(hasMethodAlreadyWrapped(node, nameMethodInvocation)) {
+            return;
+        }
+
         wrapArguments(node, nameMethodInvocation, node.arguments());
         updateArguments(node.arguments());
 
@@ -189,5 +193,13 @@ public class InferVisitorHelper {
         newAssignment.setOperator(Assignment.Operator.ASSIGN);
 
         inferGenerateCode.rewriterReplace(node, newAssignment, null);
+    }
+
+    private Boolean hasMethodAlreadyWrapped(MethodInvocation node, String inferMethodInvocation) {
+        String expressionName = node.getExpression() == null ? "" : node.getExpression().toString();
+        String nameMethodCall = expressionName + "." + node.getName().toString();
+
+        String transformedInferMethodCall = WRAPPER_CLASS_NAME + "." + inferMethodInvocation;
+        return transformedInferMethodCall.equals(nameMethodCall);
     }
 }

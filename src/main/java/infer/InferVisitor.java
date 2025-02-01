@@ -14,8 +14,8 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(VariableDeclarationFragment node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) {
-            return super.visit(node);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
         }
 
         Expression initializer = node.getInitializer();
@@ -24,13 +24,16 @@ public class InferVisitor extends ASTVisitor {
             inferGenerateCode.rewriterSet(node, VariableDeclarationFragment.INITIALIZER_PROPERTY, inferWrapper, null);
         }
 
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 
     @Override
     public boolean visit(Assignment node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) { return super.visit(node); }
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
+        }
 
         helper.wrapNonAssignOperator(node, nameMethodInvocation);
 
@@ -43,6 +46,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         helper.wrapLeftHandSide(ast, nameMethodInvocation, node.getLeftHandSide());
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 
@@ -102,27 +106,36 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(ForStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (!nameMethodInvocation.isBlank()) {
-            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
         }
+
+        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 
     @Override
     public boolean visit(IfStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (!nameMethodInvocation.isBlank()) {
-            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
         }
+
+        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 
     @Override
     public boolean visit(WhileStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (!nameMethodInvocation.isBlank()) {
-            helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
         }
+
+        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 
@@ -170,8 +183,8 @@ public class InferVisitor extends ASTVisitor {
     @Override
     public boolean visit(ReturnStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
-        if (nameMethodInvocation.isBlank()) {
-            return super.visit(node);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
         }
 
         Expression returnExpression = node.getExpression();
@@ -180,6 +193,17 @@ public class InferVisitor extends ASTVisitor {
             inferGenerateCode.rewriterSet(node, ReturnStatement.EXPRESSION_PROPERTY, wrappedExpression, null);
         }
 
+        node.setProperty(nameMethodInvocation, true);
+        return super.visit(node);
+    }
+
+    @Override
+    public boolean visit(ExpressionStatement node) {
+        String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
+        if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
+            return false;
+        }
+        node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
 }
