@@ -151,9 +151,12 @@ public class InferVisitorHelper {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
             inferGenerateCode.rewriterReplace(base, inferWrapper, null);
         } else if (lhs instanceof FieldAccess fieldAccess) {
-            Expression base = fieldAccess.getExpression();
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
-            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+            IVariableBinding fieldBinding = fieldAccess.resolveFieldBinding();
+            if (fieldBinding != null && !Modifier.isFinal(fieldBinding.getModifiers())) {
+                Expression base = fieldAccess.getExpression();
+                MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
+                inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+            }
         }
     }
 
