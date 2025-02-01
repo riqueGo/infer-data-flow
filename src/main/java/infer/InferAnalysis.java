@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import static infer.InferConstants.*;
 import static org.example.utils.PathToString.getPath;
 import static org.example.utils.PathToString.resolvePath;
+import static org.example.utils.Terminal.executeCommand;
 
 public class InferAnalysis {
 
@@ -33,17 +34,17 @@ public class InferAnalysis {
 
         System.out.println(captureCommand);
         System.out.println("Capture Infer Phase...");
-        execInfer(captureCommand, projectPath);
+        executeCommand(projectPath, captureCommand);
 
         System.out.println("Infer Executing left -> right");
         System.out.println(leftToRightAnalysis);
-        execInfer(leftToRightAnalysis, projectPath);
+        executeCommand(projectPath, leftToRightAnalysis);
 
         renameReportFile(inferOutUri, "left-to-right-report.txt");
 
         System.out.println("Infer Executing right -> left...");
         System.out.println(rightToLeftAnalysis);
-        execInfer(rightToLeftAnalysis, projectPath);
+        executeCommand(projectPath, rightToLeftAnalysis);
 
         renameReportFile(inferOutUri, "right-to-left-report.txt");
     }
@@ -72,28 +73,5 @@ public class InferAnalysis {
     private boolean isMavenProject(String projectPath) {
         Path mavenFile = Path.of(projectPath, "pom.xml");
         return Files.exists(mavenFile);
-    }
-
-
-    private void execInfer(String command, String pathExecution) {
-
-        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-        processBuilder.directory(new File(pathExecution));
-
-        try {
-            Process process = processBuilder.start();
-
-            // Capture the output of the command
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-            }
-
-            int exitCode = process.waitFor();
-            System.out.println("Process finished with exit code: " + exitCode);
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }
