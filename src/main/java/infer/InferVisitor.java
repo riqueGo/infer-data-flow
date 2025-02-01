@@ -188,7 +188,7 @@ public class InferVisitor extends ASTVisitor {
         }
 
         Expression returnExpression = node.getExpression();
-        if (returnExpression != null) {
+        if (returnExpression != null && !(returnExpression instanceof NullLiteral)) {
             MethodInvocation wrappedExpression = helper.wrapInferMethodInvocation(node.getAST(), nameMethodInvocation, returnExpression);
             inferGenerateCode.rewriterSet(node, ReturnStatement.EXPRESSION_PROPERTY, wrappedExpression, null);
         }
