@@ -16,14 +16,6 @@ public class CliConfig {
                 .required().hasArg().desc("the head commit")
                 .build();
 
-        Option parentsOption = Option.builder("pc").argName("parents")
-                .required().hasArgs().valueSeparator(' ').desc("the parents commits")
-                .build();
-
-        Option baseOption = Option.builder("bc").argName("base")
-                .required().hasArg().desc("the base commit")
-                .build();
-
         Option ssmDependenciesPathOption = Option.builder("dp").argName("ssmDependenciesPath")
                 .required().hasArg().desc("path to ssm dependencies folder")
                 .build();
@@ -32,32 +24,19 @@ public class CliConfig {
                 .required().desc("path to target project root folder")
                 .build();
 
-        Option classNameOption = Option.builder("cn").argName("className").hasArg()
-                .required().desc("packagename to main class. Eg: org.example.Main")
+        Option buildCommandOption = Option.builder("build").argName("buildCommand").hasArg()
+                .required().desc("build command")
                 .build();
 
-        Option mainMethodOption = Option.builder("m").argName("mainMethod").hasArg()
-                .desc("name of the main method. Eg: main")
-                .build();
-
-        Option gradlePathOption = Option.builder("gp").argName("gradlePath")
-                .required().hasArg().desc("path to gradle bin")
-                .build();
-
-
-        Option mavenPathOption = Option.builder("mp").argName("mavenPath").hasArg()
-                .required().desc("path to maven bin")
+        Option depthOption = Option.builder("depth").argName("depth")
+                .hasArg().desc("interprocedural depth")
                 .build();
 
         options.addOption(headOption);
-        options.addOption(parentsOption);
-        options.addOption(baseOption);
         options.addOption(ssmDependenciesPathOption);
         options.addOption(targetProjectRootOption);
-        options.addOption(classNameOption);
-        options.addOption(mainMethodOption);
-        options.addOption(gradlePathOption);
-        options.addOption(mavenPathOption);
+        options.addOption(buildCommandOption);
+        options.addOption(depthOption);
 
         return options;
     }
@@ -67,16 +46,13 @@ public class CliConfig {
         CommandLine cmd = parser.parse(options, args);
 
         String h = cmd.getOptionValue("hc");
-        String[] p = cmd.getOptionValues("pc");
-        String b = cmd.getOptionValue("bc");
         String dp = cmd.getOptionValue("dp");
         String tpr = cmd.getOptionValue("tpr");
-        String cn = cmd.getOptionValue("cn");
-        String m = cmd.getOptionValue("m");
-        String gp = cmd.getOptionValue("gp");
-        String mp = cmd.getOptionValue("mp");
+        String build = cmd.getOptionValue("build");
+        String depthArg = cmd.getOptionValue("depth");
+        int depth = depthArg == null ? 0 : Integer.parseInt(depthArg);
 
-        return new Arguments(h, p, b, dp, tpr, cn, m, gp, mp);
+        return new Arguments(h, dp, tpr, build, depth);
     }
 
     public Options getOptions() {

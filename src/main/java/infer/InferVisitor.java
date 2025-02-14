@@ -18,6 +18,11 @@ public class InferVisitor extends ASTVisitor {
             return false;
         }
 
+        IVariableBinding nodeBinding = node.resolveBinding();
+        if (nodeBinding != null && Modifier.isFinal(nodeBinding.getModifiers())) {
+            return false;
+        }
+
         Expression initializer = node.getInitializer();
         helper.wrapRightHandSide(node.getAST(), nameMethodInvocation, initializer);
 

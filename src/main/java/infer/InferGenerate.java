@@ -15,7 +15,7 @@ public class InferGenerate {
         generateManagement = InferGenerateManagement.getInstance(projectPath);
     }
 
-    public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles) {
+    public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles, int depth) {
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             String filePath = collectedMergeData.getFilePath();
             InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
@@ -24,7 +24,7 @@ public class InferGenerate {
                 inferGenerateCode.activeCompilation();
             }
 
-            InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, collectedMergeData::getWhoChangedTheLine, INTERPROCEDURAL_DEPTH);
+            InferVisitorHelper visitorHelper = new InferVisitorHelper(inferGenerateCode, collectedMergeData::getWhoChangedTheLine, depth);
             InferVisitor inferVisitor = new InferVisitor(inferGenerateCode, visitorHelper);
 
             inferGenerateCode.accept(inferVisitor);

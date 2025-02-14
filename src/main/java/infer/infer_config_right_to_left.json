@@ -2,13 +2,13 @@
   "pulse-taint-sources": [
     {
       "class_names": ["infer.InferWrapper"],
-      "method_names": ["right"]
+      "method_names": ["r"]
     }
   ],
   "pulse-taint-sinks": [
     {
       "class_names": ["infer.InferWrapper"],
-      "method_names": ["left"]
+      "method_names": ["l"]
     }
   ]
 }
