@@ -27,16 +27,18 @@ public class FileUtils {
             Files.createDirectories(source);
         }
 
-        if (Files.exists(destination)) {
-            try(Stream<Path> entries = Files.walk(destination).sorted(Comparator.reverseOrder())) {
-                entries.forEach(path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (IOException e) {
-                                throw new RuntimeException("Failed to delete file: " + path, e);
-                            }
-                        });
-            }
+        if (!Files.exists(destination)) {
+            Files.createDirectories(destination);
+        }
+
+        try(Stream<Path> entries = Files.walk(destination).sorted(Comparator.reverseOrder())) {
+            entries.forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to delete file: " + path, e);
+                        }
+                    });
         }
 
         Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
