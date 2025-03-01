@@ -37,19 +37,19 @@ public class StaticAnalysisMerge {
         System.out.println("\n Checkout to -> " + args.getHead());
         commitManager.checkoutToMergeCommit(projectPath);
 
-        System.out.println("\nStarting generate infer code...");
-        InferGenerate inferGenerate = new InferGenerate(projectPath);
-        inferGenerate.createInferPackage(projectPath);
-        inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles, args.getDepth());
+        try{
+            System.out.println("\nStarting generate infer code...");
+            InferGenerate inferGenerate = new InferGenerate(projectPath);
+            inferGenerate.createInferPackage(projectPath);
+            inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles, args.getDepth());
 
-        System.out.println("\nStarting Analysis...");
-        InferAnalysis inferAnalysis = new InferAnalysis(projectPath, args.getBuild());
-        inferAnalysis.executeDataFlowAnalysis();
+            System.out.println("\nStarting Analysis...");
+            InferAnalysis inferAnalysis = new InferAnalysis(projectPath, args.getBuild());
+            inferAnalysis.executeDataFlowAnalysis();
 
-        System.out.println("\nMoving report files...");
-        try {
+            System.out.println("\nMoving report files...");
             moveDirectory(Path.of(inferAnalysis.getOutputPath()), Path.of(WORKING_DIRECTORY, "reports", project.getOwnerAndName()[1], args.getHead()));
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

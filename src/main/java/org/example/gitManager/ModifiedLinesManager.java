@@ -79,8 +79,8 @@ public class ModifiedLinesManager {
         List<CollectedMergeDataByFile> collectedMergeDataByFiles = new ArrayList<>();
 
         for (String filePath : filePaths) {
-            Set<Integer> leftAddedLines = leftAddedLinesByFilePath.get(filePath);
-            Set<Integer> rightAddedLines = rightAddedLinesByFilePath.get(filePath);
+            Set<Integer> leftAddedLines = leftAddedLinesByFilePath.getOrDefault(filePath, new HashSet<>());
+            Set<Integer> rightAddedLines = rightAddedLinesByFilePath.getOrDefault(filePath, new HashSet<>());
             collectedMergeDataByFiles.add(new CollectedMergeDataByFile(project.getPath() + filePath, leftAddedLines, rightAddedLines));
         }
         return collectedMergeDataByFiles;
