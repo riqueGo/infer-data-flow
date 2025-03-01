@@ -131,10 +131,10 @@ public class InferVisitorHelper {
         inferGenerate.generateInferInterproceduralCode(filePathAnalysing, classVisiting, methodDeclarationName, nameMethodInvocation, depth-1);
     }
 
-    public void wrapIfSimpleName(Expression expression, AST ast, String nameMethodInvocation) {
-        if(expression instanceof SimpleName simpleName) {
-            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, simpleName);
-            inferGenerateCode.rewriterReplace(simpleName, inferWrapper, null);
+    public void wrapIfSimpleOrQualifiedName(Expression expression, AST ast, String nameMethodInvocation) {
+        if(expression instanceof SimpleName || expression instanceof QualifiedName) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, expression);
+            inferGenerateCode.rewriterReplace(expression, inferWrapper, null);
         }
     }
 
@@ -154,9 +154,7 @@ public class InferVisitorHelper {
         } else if (lhs instanceof FieldAccess fieldAccess) {
             IVariableBinding fieldBinding = fieldAccess.resolveFieldBinding();
             if (fieldBinding != null && !Modifier.isFinal(fieldBinding.getModifiers())) {
-                Expression base = fieldAccess.getExpression();
-                MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
-                inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+                wrapOptionalExpression(ast, nameMethodInvocation, fieldAccess.getExpression());
             }
         }
     }
@@ -213,6 +211,13 @@ public class InferVisitorHelper {
         newAssignment.setOperator(Assignment.Operator.ASSIGN);
 
         inferGenerateCode.rewriterReplace(node, newAssignment, null);
+    }
+
+    public void wrapOptionalExpression(AST ast, String nameMethodInvocation, Expression base) {
+        if (base != null) {
+            MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
+            inferGenerateCode.rewriterReplace(base, inferWrapper, null);
+        }
     }
 
     private boolean hasMethodAlreadyWrapped(String expressionMethodName, String methodCallName, String inferMethodCallName) {

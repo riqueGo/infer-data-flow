@@ -90,11 +90,11 @@ public class InferVisitor extends ASTVisitor {
 
         AST ast = node.getAST();
 
-        helper.wrapIfSimpleName(node.getLeftOperand(), ast, nameMethodInvocation);
-        helper.wrapIfSimpleName(node.getRightOperand(), ast, nameMethodInvocation);
+        helper.wrapIfSimpleOrQualifiedName(node.getLeftOperand(), ast, nameMethodInvocation);
+        helper.wrapIfSimpleOrQualifiedName(node.getRightOperand(), ast, nameMethodInvocation);
 
         for (Object extendedOperandObj : node.extendedOperands()) {
-            helper.wrapIfSimpleName((Expression) extendedOperandObj, ast, nameMethodInvocation);
+            helper.wrapIfSimpleOrQualifiedName((Expression) extendedOperandObj, ast, nameMethodInvocation);
         }
 
         return super.visit(node);
@@ -107,7 +107,7 @@ public class InferVisitor extends ASTVisitor {
             return false;
         }
 
-        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);
         node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
@@ -119,7 +119,7 @@ public class InferVisitor extends ASTVisitor {
             return false;
         }
 
-        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);
         node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
@@ -131,7 +131,7 @@ public class InferVisitor extends ASTVisitor {
             return false;
         }
 
-        helper.wrapIfSimpleName(node.getExpression(), node.getAST(), nameMethodInvocation);
+        helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);
         node.setProperty(nameMethodInvocation, true);
         return super.visit(node);
     }
@@ -154,6 +154,7 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
+        helper.wrapOptionalExpression(node.getAST(), nameMethodInvocation, node.getExpression());
         helper.wrapChainedMethodInvocation(node, nameMethodInvocation);
         return false;
     }
