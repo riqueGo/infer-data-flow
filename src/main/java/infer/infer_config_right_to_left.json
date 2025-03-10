@@ -2,7 +2,8 @@
   "pulse-taint-sources": [
     {
       "class_names": ["infer.InferWrapper"],
-      "method_names": ["r"]
+      "method_names": ["r"],
+      "taint_target": ["ArgumentPositions", [0]]
     }
   ],
   "pulse-taint-sinks": [

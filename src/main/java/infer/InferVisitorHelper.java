@@ -214,7 +214,10 @@ public class InferVisitorHelper {
     }
 
     public void wrapOptionalExpression(AST ast, String nameMethodInvocation, Expression base) {
-        if (base != null) {
+        if (!(base instanceof Name)) { return; }
+
+        IBinding binding = ((Name) base).resolveBinding();
+        if (!(binding instanceof ITypeBinding)) {
             MethodInvocation inferWrapper = wrapInferMethodInvocation(ast, nameMethodInvocation, base);
             inferGenerateCode.rewriterReplace(base, inferWrapper, null);
         }
