@@ -9,7 +9,6 @@ import infer.InferGenerate;
 import project.MergeCommit;
 import project.Project;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -40,7 +39,6 @@ public class StaticAnalysisMerge {
         try{
             System.out.println("\nStarting generate infer code...");
             InferGenerate inferGenerate = new InferGenerate(projectPath);
-            inferGenerate.createInferPackage(projectPath);
             inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles, args.getDepth());
 
             System.out.println("\nStarting Analysis...");

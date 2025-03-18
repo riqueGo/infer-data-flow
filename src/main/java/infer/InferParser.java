@@ -14,7 +14,7 @@ public class InferParser {
         parser.setResolveBindings(true);
         parser.setBindingsRecovery(true);
 
-        String[] sourcepath = { getPath(projectPath, SOURCE_PROJECT_PATH) };
+        String[] sourcepath = { getPath(projectPath) };
 
         parser.setEnvironment(null, sourcepath, null, true);
         parser.setSource(sourceFile.toCharArray());

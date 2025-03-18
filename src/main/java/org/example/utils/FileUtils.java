@@ -3,6 +3,7 @@ package org.example.utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.stream.Stream;
@@ -24,7 +25,7 @@ public class FileUtils {
 
     public static void moveDirectory(Path source, Path destination) throws IOException {
         if (!Files.exists(source)) {
-            Files.createDirectories(source);
+            return;
         }
 
         if (!Files.exists(destination)) {
@@ -42,5 +43,9 @@ public class FileUtils {
         }
 
         Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public static Boolean isFileExists(String filePath) {
+        return Files.exists(Path.of(filePath));
     }
 }

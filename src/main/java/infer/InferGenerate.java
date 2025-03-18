@@ -4,9 +4,10 @@ import org.example.gitManager.CollectedMergeDataByFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import static infer.InferConstants.*;
+import static org.example.utils.FileUtils.isFileExists;
+import static org.example.utils.FileUtils.moveDirectory;
 
 public class InferGenerate {
     private final InferGenerateManagement generateManagement;
@@ -18,6 +19,10 @@ public class InferGenerate {
     public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles, int depth) {
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             String filePath = collectedMergeData.getFilePath();
+            if(!isFileExists(filePath)) {
+                System.out.println("File not found: " + filePath);
+                continue;
+            }
             InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
 
             if (!inferGenerateCode.isActive()) {
@@ -53,21 +58,6 @@ public class InferGenerate {
         if (firstVisiting) {
             inferGenerateCode.rewriteFile();
             inferGenerateCode.desactiveCompilation();
-        }
-    }
-
-    public void createInferPackage(String targetPath) {
-        Path sourceDirPath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
-        Path targetDirPath = Path.of(targetPath, INFER_PACKAGE_PATH);
-        Path wrapperFilePath = sourceDirPath.resolve(WRAPPER_CLASS_NAME + ".java");
-
-        try {
-            Files.createDirectories(targetDirPath);
-            Path targetFile = targetDirPath.resolve(wrapperFilePath.getFileName());
-            Files.copy(wrapperFilePath, targetFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            System.err.println("Error creating Infer Package: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

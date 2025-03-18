@@ -104,7 +104,7 @@ public class InferVisitor extends ASTVisitor {
     public boolean visit(ForStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
-            return false;
+            return super.visit(node);
         }
 
         helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);
@@ -116,7 +116,7 @@ public class InferVisitor extends ASTVisitor {
     public boolean visit(IfStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
-            return false;
+            return super.visit(node);
         }
 
         helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);
@@ -128,7 +128,7 @@ public class InferVisitor extends ASTVisitor {
     public boolean visit(WhileStatement node) {
         String nameMethodInvocation = helper.getNameMethodInferWrapperInvocation(node);
         if (nameMethodInvocation.isBlank() || node.getProperty(nameMethodInvocation) != null) {
-            return false;
+            return super.visit(node);
         }
 
         helper.wrapIfSimpleOrQualifiedName(node.getExpression(), node.getAST(), nameMethodInvocation);

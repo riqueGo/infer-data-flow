@@ -1,0 +1,13 @@
+gradle
+
+dependencies {
+    implementation 'infer:infer-wrapper:1.0.0'
+}
+
+maven
+
+<dependency>
+    <groupId>infer</groupId>
+    <artifactId>infer-wrapper</artifactId>
+    <version>1.0.0</version>
+</dependency>

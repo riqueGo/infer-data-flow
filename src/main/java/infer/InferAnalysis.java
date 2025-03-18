@@ -8,14 +8,14 @@ import static org.example.utils.Terminal.executeCommand;
 import static org.example.utils.FileUtils.renameFile;
 
 public class InferAnalysis {
-    private final String projectPath;
-    private final String buildCommand;
-    private final String outputPath;
+    private String projectPath;
+    private String buildCommand;
+    private String outputPath;
 
     public InferAnalysis(String projectPath, String buildCommand) {
         this.projectPath = projectPath;
         this.buildCommand = buildCommand;
-        outputPath = resolvePath(Path.of(projectPath, INFER_PACKAGE_PATH), INFER_OUT);
+        outputPath = INFER_OUT;
     }
 
     public void executeDataFlowAnalysis() {
