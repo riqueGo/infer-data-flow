@@ -38,7 +38,7 @@ public class StaticAnalysisMerge {
 
         try{
             System.out.println("\nStarting generate infer code...");
-            InferGenerate inferGenerate = new InferGenerate(projectPath);
+            InferGenerate inferGenerate = new InferGenerate(collectedMergeDataByFiles);
             inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles, args.getDepth());
 
             System.out.println("\nStarting Analysis...");

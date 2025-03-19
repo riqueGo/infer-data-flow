@@ -1,19 +1,20 @@
 package infer;
 
 import org.example.gitManager.CollectedMergeDataByFile;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-import static infer.InferConstants.*;
 import static org.example.utils.FileUtils.isFileExists;
-import static org.example.utils.FileUtils.moveDirectory;
 
 public class InferGenerate {
     private final InferGenerateManagement generateManagement;
 
-    public InferGenerate(String projectPath) {
-        generateManagement = InferGenerateManagement.getInstance(projectPath);
+    public InferGenerate() {
+        generateManagement = InferGenerateManagement.getInstance();
+    }
+
+    public InferGenerate(List<CollectedMergeDataByFile> collectedMergeDataByFiles) {
+        generateManagement = InferGenerateManagement.getInstance();
+        setSourcesProject(collectedMergeDataByFiles);
     }
 
     public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles, int depth) {
@@ -39,7 +40,10 @@ public class InferGenerate {
     }
 
     public void generateInferInterproceduralCode(String filePath, String classVisiting, String methodDeclarationName, String developer, int depth) {
-        if (depth < 0 || Files.notExists(Path.of(filePath))) return;
+        if (depth < 0) return;
+
+        filePath = generateManagement.getAbsoluteFilePath(filePath);
+        if(filePath == null) { return; } //Doesn't exist this filePath
 
         boolean firstVisiting = !generateManagement.hasCompilationActive(filePath);
         InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
@@ -59,5 +63,11 @@ public class InferGenerate {
             inferGenerateCode.rewriteFile();
             inferGenerateCode.desactiveCompilation();
         }
+    }
+
+    private void setSourcesProject(List<CollectedMergeDataByFile> collectedMergeDataByFiles) {
+        List<String> filePaths = new ArrayList<>();
+        collectedMergeDataByFiles.forEach(collectedMergeDataByFile -> {filePaths.add(collectedMergeDataByFile.getFilePath());});
+        generateManagement.setSourcesProject(filePaths);
     }
 }

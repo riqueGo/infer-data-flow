@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 
 import static infer.InferConstants.*;
-import static infer.InferGenerateManagement.PROJECT_PATH;
 import static org.example.utils.PathToString.*;
 
 public class InferGenerateCode {
@@ -100,7 +99,7 @@ public class InferGenerateCode {
             source = fileSourceToString(filePath);
 
             InferParser inferParser = new InferParser();
-            compilationUnit = inferParser.getCompilationUnit(filePath, PROJECT_PATH, source);
+            compilationUnit = inferParser.getCompilationUnit(filePath, source);
 
             AST ast = compilationUnit.getAST();
             rewriter = ASTRewrite.create(ast);

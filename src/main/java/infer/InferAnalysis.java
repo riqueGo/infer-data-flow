@@ -15,7 +15,7 @@ public class InferAnalysis {
     public InferAnalysis(String projectPath, String buildCommand) {
         this.projectPath = projectPath;
         this.buildCommand = buildCommand;
-        outputPath = INFER_OUT;
+        outputPath = projectPath + INFER_OUT;
     }
 
     public void executeDataFlowAnalysis() {
@@ -25,7 +25,7 @@ public class InferAnalysis {
     }
 
     private boolean build() {
-        String captureCommand = String.format("infer capture -o %s -- %s", outputPath, buildCommand);
+        String captureCommand = String.format("infer capture -- %s", buildCommand);
         System.out.println(captureCommand);
         try {
             executeCommand(projectPath, captureCommand);
@@ -38,7 +38,7 @@ public class InferAnalysis {
     private void analysis() {
         Path inferSourcePackagePath = Path.of(WORKING_DIRECTORY, INFER_PACKAGE_PATH);
 
-        String analyzeCommand = String.format("infer analyze --pulse-only -o %s", outputPath);
+        String analyzeCommand = "infer analyze --pulse-only";
         String rightToLeftAnalysis = String.format("%s --inferconfig-path %s", analyzeCommand, inferSourcePackagePath.resolve(INFER_CONFIG_RIGHT_TO_LEFT));
         String leftToRightAnalysis = String.format("%s --inferconfig-path %s", analyzeCommand, inferSourcePackagePath.resolve(INFER_CONFIG_LEFT_TO_RIGHT));
 

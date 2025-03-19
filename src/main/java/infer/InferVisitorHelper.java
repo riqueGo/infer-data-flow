@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.function.Function;
 
 import static infer.InferConstants.*;
-import static infer.InferGenerateManagement.PROJECT_PATH;
-import static org.example.utils.PathToString.getPath;
 
 public class InferVisitorHelper {
     private final InferGenerateCode inferGenerateCode;
@@ -125,10 +123,9 @@ public class InferVisitorHelper {
         String qualifiedName = outerClass.getQualifiedName();
 
         String sourceFilePath = qualifiedName.replace('.', '/') + ".java";
-        String filePathAnalysing = getPath(PROJECT_PATH, SOURCE_PROJECT_PATH, sourceFilePath);
 
-        InferGenerate inferGenerate = new InferGenerate(PROJECT_PATH);
-        inferGenerate.generateInferInterproceduralCode(filePathAnalysing, classVisiting, methodDeclarationName, nameMethodInvocation, depth-1);
+        InferGenerate inferGenerate = new InferGenerate();
+        inferGenerate.generateInferInterproceduralCode(sourceFilePath, classVisiting, methodDeclarationName, nameMethodInvocation, depth-1);
     }
 
     public void wrapIfSimpleOrQualifiedName(Expression expression, AST ast, String nameMethodInvocation) {
