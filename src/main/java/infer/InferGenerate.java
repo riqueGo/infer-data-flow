@@ -20,10 +20,6 @@ public class InferGenerate {
     public void generateInferCodeForEachCollectedMergeData(List<CollectedMergeDataByFile> collectedMergeDataByFiles, int depth) {
         for (CollectedMergeDataByFile collectedMergeData : collectedMergeDataByFiles) {
             String filePath = collectedMergeData.getFilePath();
-            if(!isFileExists(filePath)) {
-                System.out.println("File not found: " + filePath);
-                continue;
-            }
             InferGenerateCode inferGenerateCode = generateManagement.getGenerateData(filePath);
 
             if (!inferGenerateCode.isActive()) {

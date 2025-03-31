@@ -28,20 +28,19 @@ public class StaticAnalysisMerge {
         String projectPath = project.getPath();
 
         CommitManager commitManager = new CommitManager(args.getHead(), projectPath);
+        System.out.println("\n Checkout to -> " + args.getHead());
+        commitManager.checkoutToMergeCommit(projectPath);
+
         ModifiedLinesManager modifiedLinesManager = new ModifiedLinesManager(args.getSsmDependenciesPath());
         MergeCommit mergeCommit = commitManager.buildMergeCommit();
 
         List<CollectedMergeDataByFile> collectedMergeDataByFiles = modifiedLinesManager.collectLineDataByFile(project, mergeCommit);
-
-        System.out.println("\n Checkout to -> " + args.getHead());
-        commitManager.checkoutToMergeCommit(projectPath);
 
         try{
             System.out.println("\nStarting generate infer code...");
             InferGenerate inferGenerate = new InferGenerate(collectedMergeDataByFiles);
             inferGenerate.generateInferCodeForEachCollectedMergeData(collectedMergeDataByFiles, args.getDepth());
 
-            System.out.println("\nStarting Analysis...");
             InferAnalysis inferAnalysis = new InferAnalysis(projectPath, args.getBuild());
             inferAnalysis.executeDataFlowAnalysis();
 

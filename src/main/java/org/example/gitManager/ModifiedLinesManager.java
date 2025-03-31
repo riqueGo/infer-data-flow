@@ -12,6 +12,8 @@ import util.TypeNameHelper;
 
 import java.util.*;
 
+import static org.example.utils.FileUtils.isFileExists;
+
 public class ModifiedLinesManager {
     ModifiedLinesCollector modifiedLinesCollector;
     FileManager fileManager;
@@ -60,6 +62,13 @@ public class ModifiedLinesManager {
             for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getLeftSHA(), mergeCommit.getSHA())) {
                 leftAddedLines.add(modifiedLine.getNumber());
             }
+
+            filePath = project.getPath() + filePath;
+            if(!isFileExists(filePath)) {
+                System.out.println("L -> File not found: " + filePath);
+                continue;
+            }
+
             if (!leftAddedLines.isEmpty()) {
                 leftAddedLinesByFilePath.put(filePath, leftAddedLines);
                 filePaths.add(filePath);
@@ -70,6 +79,13 @@ public class ModifiedLinesManager {
             for (ModifiedLine modifiedLine : modifiedMethodsHelper.getModifiedLines(project, filePath, mergeCommit.getRightSHA(), mergeCommit.getSHA())) {
                 rightAddedLines.add(modifiedLine.getNumber());
             }
+
+            filePath = project.getPath() + filePath;
+            if(!isFileExists(filePath)) {
+                System.out.println("R -> File not found: " + filePath);
+                continue;
+            }
+
             if (!rightAddedLines.isEmpty()) {
                 rightAddedLinesByFilePath.put(filePath, rightAddedLines);
                 filePaths.add(filePath);
@@ -81,7 +97,7 @@ public class ModifiedLinesManager {
         for (String filePath : filePaths) {
             Set<Integer> leftAddedLines = leftAddedLinesByFilePath.getOrDefault(filePath, new HashSet<>());
             Set<Integer> rightAddedLines = rightAddedLinesByFilePath.getOrDefault(filePath, new HashSet<>());
-            collectedMergeDataByFiles.add(new CollectedMergeDataByFile(project.getPath() + filePath, leftAddedLines, rightAddedLines));
+            collectedMergeDataByFiles.add(new CollectedMergeDataByFile(filePath, leftAddedLines, rightAddedLines));
         }
         return collectedMergeDataByFiles;
     }

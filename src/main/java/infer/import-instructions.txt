@@ -1,5 +1,10 @@
 gradle
 
+repositories {
+    mavenLocal() // Allows resolving from local Maven repository
+    mavenCentral() // Optional: Include other public packages
+}
+
 dependencies {
     implementation 'infer:infer-wrapper:1.0.0'
 }

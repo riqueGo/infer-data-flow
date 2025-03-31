@@ -19,7 +19,9 @@ public class InferAnalysis {
     }
 
     public void executeDataFlowAnalysis() {
+        System.out.println("\nStarting Build...");
         if (build()) {
+            System.out.println("\nStarting Analysis...");
             analysis();
         }
     }
