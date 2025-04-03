@@ -108,6 +108,10 @@ public class InferVisitorHelper {
         } else if (expression instanceof ClassInstanceCreation) {
             wrapClassIntanceCreation((ClassInstanceCreation) expression, nameMethodInvocation);
         }
+        IMethodBinding binding = node.resolveMethodBinding();
+        if (binding != null && !Modifier.isStatic(binding.getModifiers())) {
+            wrapOptionalExpression(node.getAST(), nameMethodInvocation, node.getExpression());
+        }
         wrapMethodInvocation(node, nameMethodInvocation);
     }
 

@@ -152,10 +152,6 @@ public class InferVisitor extends ASTVisitor {
             return super.visit(node);
         }
 
-        IMethodBinding binding = node.resolveMethodBinding();
-        if (binding != null && !Modifier.isStatic(binding.getModifiers())) {
-            helper.wrapOptionalExpression(node.getAST(), nameMethodInvocation, node.getExpression());
-        }
         helper.wrapChainedMethodInvocation(node, nameMethodInvocation);
         return false;
     }
